@@ -1,0 +1,7 @@
+.env
+.venv/
+artifacts/
+__pycache__/
+*.pyc
+website_test_agent_backup/
+.vscode/

@@ -1,0 +1,69 @@
+name: Website tests (NurseConnect + Hospital)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "30 2 * * *"      # daily 08:00 IST (GitHub cron is UTC)
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: "health | login | discovery | pages | forms | permissions | workflows | all"
+        default: "all"
+
+concurrency:
+  group: website-tests
+  cancel-in-progress: false
+
+env:
+  PHASE: ${{ github.event.inputs.phase || 'all' }}
+
+jobs:
+  # 1st site
+  nurseconnect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_ONLY: nurseconnect
+      NURSE_EMAIL: ${{ secrets.NURSE_EMAIL }}
+      NURSE_PASSWORD: ${{ secrets.NURSE_PASSWORD }}
+      CONSUMER_EMAIL: ${{ secrets.CONSUMER_EMAIL }}
+      CONSUMER_PASSWORD: ${{ secrets.CONSUMER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt && playwright install --with-deps chromium
+      - run: python run.py --phase "$PHASE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nurseconnect-report
+          path: artifacts/
+          retention-days: 14
+
+  # 2nd site: starts only after the first finished (even if it failed)
+  hospital:
+    needs: nurseconnect
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_ONLY: hospital
+      HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/' }}
+      RECEPTION_EMAIL: ${{ secrets.RECEPTION_EMAIL }}
+      RECEPTION_PASSWORD: ${{ secrets.RECEPTION_PASSWORD }}
+      DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
+      DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt && playwright install --with-deps chromium
+      - run: python run.py --phase "$PHASE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hospital-report
+          path: artifacts/
+          retention-days: 14
