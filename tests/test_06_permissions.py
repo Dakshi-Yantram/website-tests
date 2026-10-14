@@ -1,5 +1,6 @@
 """Phase 7: role-based access & unauthenticated access."""
 import itertools
+import re
 import pytest
 
 from config import APPS, ROLES
@@ -11,8 +12,16 @@ from utils.recorder import REC, Blocked
 T = "06_permissions"
 
 
+# Single-page apps often show an in-page "no access" screen (HTTP 200, same URL) instead of redirecting.
+DENIED_RX = re.compile(
+    r"don'?t have (access|permission)|do not have (access|permission)|not authori[sz]ed|access denied|"
+    r"forbidden|insufficient permission|permission (is )?required", re.I)
+
+
 def _accessible(app: AppPage, status, requested, final) -> bool:
     txt = app.body_text()
+    if DENIED_RX.search(txt[:2000]):
+        return False  # app rendered its own access-denied screen
     return ((status or 0) < 400 and not app.is_login()
             and path_of(final) == path_of(requested) and len(txt.strip()) > 50)
 

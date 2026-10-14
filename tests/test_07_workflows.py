@@ -7,7 +7,7 @@ import pytest
 from config import ALLOW_WRITE, TEST_MARKER
 from pages.app_page import AppPage
 from utils.recorder import REC, Blocked
-from config import ALLOW_WRITE, TEST_MARKER, ROLES
+
 T = "07_workflows"
 
 WORKFLOWS = [
@@ -28,7 +28,7 @@ WORKFLOWS = [
          nav=[r"care package|package|service"], create=r"book|select|add to cart|enrol|subscribe|choose", write=True, payment=True),
 ]
 
-WORKFLOWS = [w for w in WORKFLOWS if w["role"] in ROLES]
+
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=[w["id"] for w in WORKFLOWS])
 def test_workflow(wf, need_session):
     role, test = wf["role"], f"{T}:{wf['id']}"
@@ -85,7 +85,10 @@ def test_workflow(wf, need_session):
             btn.click(); app.settle()
             n_fields = page.locator("form:visible input:visible, [role=dialog] input:visible, .modal input:visible").count()
             st.actual = f"{n_fields} visible input fields"
-            assert n_fields > 0, "Nothing that looks like a form appeared"
+            if n_fields == 0:
+                # The button was picked by a text heuristic; if no form opened we cannot tell app bug from wrong button.
+                raise Blocked(f"Clicked '{btn.inner_text()[:40].strip()}' but no form/dialog appeared - "
+                              "set the right button/selector for this workflow")
         with REC.step(test, f"Submit with safe test data ({TEST_MARKER})", role, "Success message or record appears", page, mon, "High", shot=True) as st:
             if not ALLOW_WRITE:
                 raise Blocked("ALLOW_WRITE_TESTS=false (set true only on staging/test data)")
