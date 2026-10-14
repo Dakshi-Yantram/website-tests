@@ -7,7 +7,7 @@ import pytest
 from config import ALLOW_WRITE, TEST_MARKER
 from pages.app_page import AppPage
 from utils.recorder import REC, Blocked
-
+from config import ALLOW_WRITE, TEST_MARKER, ROLES
 T = "07_workflows"
 
 WORKFLOWS = [
@@ -28,7 +28,7 @@ WORKFLOWS = [
          nav=[r"care package|package|service"], create=r"book|select|add to cart|enrol|subscribe|choose", write=True, payment=True),
 ]
 
-
+WORKFLOWS = [w for w in WORKFLOWS if w["role"] in ROLES]
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=[w["id"] for w in WORKFLOWS])
 def test_workflow(wf, need_session):
     role, test = wf["role"], f"{T}:{wf['id']}"
