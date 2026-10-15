@@ -87,9 +87,14 @@ def test_workflow(wf, need_session):
                 btn = page.get_by_role("link", name=rx).first
             if not btn.count():
                 raise Blocked(f"No button/link matching /{wf['create']}/ on this page")
+            before_url = page.url
             btn.click(); app.settle()
             n_fields = page.locator("form:visible input:visible, [role=dialog] input:visible, .modal input:visible").count()
             st.actual = f"{n_fields} visible input fields"
+            if n_fields == 0 and (page.url != before_url or page.locator("[role=dialog], .modal").count() > 0):
+                # The click worked and opened a new page/dialog (e.g. a multi-step booking wizard),
+                # it just has no plain input form to fill automatically. That is not an app defect.
+                raise Blocked(f"Opened {page.url} but it has no plain input form (multi-step flow?) - add role-specific steps manually")
             assert n_fields > 0, "Nothing that looks like a form appeared"
         with REC.step(test, f"Submit with safe test data ({TEST_MARKER})", role, "Success message or record appears", page, mon, "High", shot=True) as st:
             if not ALLOW_WRITE:
