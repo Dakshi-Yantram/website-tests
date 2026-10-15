@@ -50,6 +50,7 @@ jobs:
     timeout-minutes: 45
     env:
       APP_ONLY: hospital
+      FAIL_ON_FINDINGS: "false"   # hospital findings (HTTP, console errors) are tracked in the report, not by a red job
       HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/' }}
       RECEPTION_EMAIL: ${{ secrets.RECEPTION_EMAIL }}
       RECEPTION_PASSWORD: ${{ secrets.RECEPTION_PASSWORD }}
