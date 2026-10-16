@@ -89,7 +89,15 @@ def pick_option(page, root, pattern, index=0):
 
 
 def click_and_capture(page, btn, timeout=15000):
-    """Click a save button and return (status, 'METHOD url', response_text) of the POST/PUT/PATCH it triggers."""
+    """Click a save button and return (status, 'METHOD url', response_text) of the POST/PUT/PATCH it triggers.
+    When nothing comes back, the 2nd value explains why (click error, requests seen, failed requests, console errors)."""
+    seen, failed, errs = [], [], []
+    on_req = lambda r: seen.append(f"{r.method} {r.url[-45:]}")
+    on_fail = lambda r: failed.append(f"{r.method} {r.url[-45:]} {r.failure}")
+    on_msg = lambda m: errs.append(m.text[:90]) if m.type == "error" else None
+    page.on("request", on_req)
+    page.on("requestfailed", on_fail)
+    page.on("console", on_msg)
     try:
         with page.expect_response(lambda r: r.request.method in ("POST", "PUT", "PATCH"), timeout=timeout) as ri:
             btn.click()
@@ -99,8 +107,37 @@ def click_and_capture(page, btn, timeout=15000):
         except Exception:
             body = ""
         return r.status, f"{r.request.method} {r.url[-80:]}", body
-    except Exception:
-        return 0, "no POST/PUT/PATCH request was sent", ""
+    except Exception as e:
+        why = (str(e).strip().splitlines() or [type(e).__name__])[0][:140]
+        info = f"no POST/PUT/PATCH response ({type(e).__name__}: {why}); requests seen={seen[-4:]}; failed={failed[-3:]}; console errors={errs[-3:]}"
+        return 0, info, ""
+    finally:
+        for ev, fn in (("request", on_req), ("requestfailed", on_fail), ("console", on_msg)):
+            try:
+                page.remove_listener(ev, fn)
+            except Exception:
+                pass
+
+
+def form_diag(page):
+    """Explain why a submit did nothing: browser-validation errors, empty fields and the dialog's visible text."""
+    js = r"""() => {
+      const vis = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+      const lab = e => (e.closest('.MuiFormControl-root')?.querySelector('label')?.innerText || e.name || e.id || e.type || '').trim();
+      const inv = [...document.querySelectorAll('input,textarea,select')].filter(e => vis(e) && !e.checkValidity())
+        .map(e => lab(e) + "='" + (e.value || '').slice(0, 20) + "': " + e.validationMessage);
+      const empty = [...document.querySelectorAll('[role=dialog] input, [role=dialog] textarea')]
+        .filter(e => vis(e) && !e.value && !['file', 'hidden', 'checkbox', 'radio'].includes(e.type)).map(lab);
+      const ds = [...document.querySelectorAll('[role=dialog]')].sort((x, y) => y.innerText.length - x.innerText.length);
+      const d = ds[0];
+      const vals = d ? [...d.querySelectorAll('input, textarea')].filter(e => vis(e) && e.value && e.type !== 'file').map(e => lab(e) + '=' + e.value.slice(0, 25)) : [];
+      const btns = d ? [...d.querySelectorAll('button')].map(b => b.innerText.trim() + (b.disabled ? '(disabled)' : '')) : [];
+      return JSON.stringify({invalid_inputs: inv, empty_inputs: empty, filled: vals, buttons: btns, dialogs: ds.length, dialog_text: (d ? d.innerText : '').replace(/\s+/g, ' ').slice(0, 350)});
+    }"""
+    try:
+        return page.evaluate(js)
+    except Exception as e:
+        return f"(form_diag failed: {str(e)[:80]})"
 
 
 def alerts_text(page):
@@ -115,7 +152,7 @@ def button_names(root):
         return []
 
 
-def type_and_pick(page, root, pattern, texts=("fe", "co", "he", "pa", "ab")):
+def type_and_pick(page, root, pattern, texts=("fe", "co", "he", "pa", "ab"), index=0):
     """For search-as-you-type dropdowns (e.g. Symptom: 'Enter 2 letters'): type, wait for options, pick the first."""
     box = field(root, pattern)
     tried = []
@@ -132,14 +169,18 @@ def type_and_pick(page, root, pattern, texts=("fe", "co", "he", "pa", "ab")):
         except Exception:
             tried.append(txt)
             continue
+        real = []
         for i in range(opts.count()):
             o = opts.nth(i)
             if o.is_visible():
                 name = o.inner_text().strip()
                 if name and not re.match(r"^\s*(no options|loading)", name, re.I):
-                    o.click()
-                    page.wait_for_timeout(500)
-                    return name
+                    real.append((o, name))
+        if real:
+            o, name = real[min(index, len(real) - 1)]
+            o.click()
+            page.wait_for_timeout(500)
+            return name
         tried.append(txt)
     raise AssertionError(f"No options appeared for /{pattern}/ after typing {tried}")
 
