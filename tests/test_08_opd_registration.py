@@ -79,8 +79,10 @@ SLOT_BASE = int(RUN_ID, 16) % 48
 
 def slot(n=0):
     """A different appointment time per run (08:00 - 19:45, 15-minute steps) so doctor slots don't collide."""
-    i = (SLOT_BASE + n) % 48
-    return f"{8 + i // 4:02d}:{(i % 4) * 15:02d}"
+    import datetime as _dt
+    now = _dt.datetime.now()
+    i = max(32, (now.hour * 60 + now.minute) // 15 - 1 - (SLOT_BASE % 4) - n)     # 32 = 08:00; slot in the past, not future
+    return f"{i // 4:02d}:{(i % 4) * 15:02d}"
 
 
 def first_visible(loc):
