@@ -183,19 +183,25 @@ def test_patient_details(need_session):
         dlg = get_dialog(page)
         # realistic adult values, in the order of the form: Oxygen %, Respiratory rate, BP high, BP low, Pulse, Temp (C)
         got = fill_number_inputs(dlg, ["98", "16", "120", "80", "72", "37"])
+        vt = page.evaluate("() => { const d = new Date(Date.now() - 15*60000); return d.getDate() === new Date().getDate() ? d.toTimeString().slice(0,5) : '00:00'; }")      # always in the past (the app rejects future times)
         times = dlg.locator("input[type=time]")
         for i in range(times.count()):
             if times.nth(i).is_visible():
-                times.nth(i).fill("08:00")
-        st.actual = f"values in form order (oxygen, resp, BP high, BP low, pulse, temp) = {got}; times 08:00"
+                times.nth(i).fill(vt)
+        st.actual = f"values in form order (oxygen, resp, BP high, BP low, pulse, temp) = {got}; times {vt}"
         add_btn = first_visible(dlg.get_by_role("button", name=re.compile(r"^\s*add\s*$", re.I)))
-        v_status, v_where, v_body = click_and_capture(page, add_btn, timeout=4000)      # ADD may save directly ...
+        v_status, v_where, v_body = click_and_capture(page, add_btn, timeout=15000)      # ADD may save directly ...
         submit = dlg.get_by_role("button", name=rx(r"^\s*(submit|save)"))
         if v_status == 0 and submit.count():                                             # ... or only add a row, then SUBMIT saves
             page.wait_for_timeout(600)
             save_step(page, st, first_visible(submit), "Vitals")
         else:
             st.actual += f" | server={v_status} ({v_where})"
+            try:
+                page.screenshot(path=str(ART / "vitals_after_add.png"), full_page=True)
+                st.actual += f" | BUTTONS={button_names(dlg)} | dialogs={page.locator('[role=dialog]').count()} | DLGTEXT={re.sub(chr(92)+'s+', ' ', dlg.inner_text())[:300]}"
+            except Exception as e:
+                st.actual += f" | (vitals debug failed: {str(e)[:60]})"
             assert 200 <= v_status < 300, f"Vitals: save failed {v_where} -> {v_status}; buttons: {button_names(dlg)}; FORM={form_diag(page)}"
 
     # 4 Prescription ---------------------------------------------------
@@ -208,7 +214,7 @@ def test_patient_details(need_session):
         btn.click()
         dlg = get_dialog(page)
         mtype = pick_option(page, dlg, r"^Medicine Type", 1)                    # a real medicine type, not 'No medicine'
-        fill_checked(dlg, r"^Medicine Name", "AUTOTEST Paracetamol 500")
+        mname = type_and_pick(page, dlg, r"^Medicine Name", texts=("par", "ami", "cet", "ibu", "pan", "azi", "amo", "met"))      # a search dropdown: must pick a listed medicine
         fill_checked(dlg, r"^Dosage(?!\s*Unit)", "1")
         unit = pick_option(page, dlg, r"^Dosage Unit", 0)
         fill_checked(dlg, r"^Frequency", "1")
@@ -221,14 +227,22 @@ def test_patient_details(need_session):
             chip_state = "?"
         fill_checked(dlg, r"^Days", "3")
         fill_checked(dlg, r"^Medicine Start Date", datetime.date.today().isoformat())
-        log = [f"type={mtype}", f"unit={unit}", f"chip[{chip_state}]"]
-        try:                                                                      # optional lab test
-            # Test is search-as-you-type: options appear only after 3+ characters
-            log.append(f"test={type_and_pick(page, dlg, r'^Test', texts=('del', 'cbc', 'ult', 'ct ', 'blo'))}")
-            first_visible(dlg.get_by_role("button", name=re.compile(r"^\s*add\s*$", re.I))).click()
-            page.wait_for_timeout(600)
+        log = [f"medicine={mname}", f"type={mtype}", f"unit={unit}", f"chip[{chip_state}]"]
+        try:                                                                      # optional lab test (search-as-you-type, 3+ chars)
+            log.append(f"test={type_and_pick(page, dlg, r'^Test', texts=('del', 'cbc', 'ult', 'ct ', 'blo', 'hae', 'thy', 'lip', 'ecg', 'xra', 'sug'))}")
         except Exception as e:
             log.append(f"test skipped ({str(e)[:60]})")
+        # ADD must ALWAYS be clicked (also when the test was skipped): it moves the filled medicine into the list,
+        # and SUBMIT does nothing (no request, no error text) while that list is empty.
+        try:
+            add = first_visible(dlg.get_by_role("button", name=re.compile(r"^\s*add\s*$", re.I)))
+            add.scroll_into_view_if_needed()
+            add.click()
+            page.wait_for_timeout(800)
+            still = field(dlg, r"^Medicine Name")
+            log.append(f"ADD clicked (Medicine Name now '{still.input_value()[:20]}')")
+        except Exception as e:
+            log.append(f"ADD not clicked ({str(e)[:60]})")
         try:
             fill_checked(dlg, r"^Advice", "AUTOTEST advice: rest and fluids")
             log.append("filled Advice")
