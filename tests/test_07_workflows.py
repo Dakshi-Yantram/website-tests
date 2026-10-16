@@ -4,7 +4,7 @@ Stages that create data only run when ALLOW_WRITE_TESTS=true (use staging!). Pay
 import re
 import pytest
 
-from config import ALLOW_WRITE, TEST_MARKER
+from config import ALLOW_WRITE, ROLES, TEST_MARKER
 from pages.app_page import AppPage
 from utils.recorder import REC, Blocked
 
@@ -29,7 +29,12 @@ WORKFLOWS = [
 ]
 
 
-@pytest.mark.parametrize("wf", WORKFLOWS, ids=[w["id"] for w in WORKFLOWS])
+# CI runs one site per job (APP_ONLY), so ROLES only holds that site's roles.
+# Keep only the workflows whose role exists here, otherwise ROLES[role] raises KeyError.
+ACTIVE_WORKFLOWS = [w for w in WORKFLOWS if w["role"] in ROLES]
+
+
+@pytest.mark.parametrize("wf", ACTIVE_WORKFLOWS, ids=[w["id"] for w in ACTIVE_WORKFLOWS])
 def test_workflow(wf, need_session):
     role, test = wf["role"], f"{T}:{wf['id']}"
     s = need_session(role, test)
@@ -82,13 +87,15 @@ def test_workflow(wf, need_session):
                 btn = page.get_by_role("link", name=rx).first
             if not btn.count():
                 raise Blocked(f"No button/link matching /{wf['create']}/ on this page")
+            before_url = page.url
             btn.click(); app.settle()
             n_fields = page.locator("form:visible input:visible, [role=dialog] input:visible, .modal input:visible").count()
             st.actual = f"{n_fields} visible input fields"
-            if n_fields == 0:
-                # The button was picked by a text heuristic; if no form opened we cannot tell app bug from wrong button.
-                raise Blocked(f"Clicked '{btn.inner_text()[:40].strip()}' but no form/dialog appeared - "
-                              "set the right button/selector for this workflow")
+            if n_fields == 0 and (page.url != before_url or page.locator("[role=dialog], .modal").count() > 0):
+                # The click worked and opened a new page/dialog (e.g. a multi-step booking wizard),
+                # it just has no plain input form to fill automatically. That is not an app defect.
+                raise Blocked(f"Opened {page.url} but it has no plain input form (multi-step flow?) - add role-specific steps manually")
+            assert n_fields > 0, "Nothing that looks like a form appeared"
         with REC.step(test, f"Submit with safe test data ({TEST_MARKER})", role, "Success message or record appears", page, mon, "High", shot=True) as st:
             if not ALLOW_WRITE:
                 raise Blocked("ALLOW_WRITE_TESTS=false (set true only on staging/test data)")

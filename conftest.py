@@ -1,4 +1,5 @@
 """Shared fixtures: one browser, one independent logged-in context per role, cached inventories."""
+import os
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -129,4 +130,9 @@ def pytest_sessionfinish(session, exitstatus):
     html_path, json_path = write_reports(REC)
     print(f"\n\nHTML report: {html_path}\nJSON report: {json_path}\nSummary: {REC.summary()}")
     if REC.failures() and exitstatus == 0:
-        session.exitstatus = 1
+        # FAIL_ON_FINDINGS=false: site findings stay in the report (and show as a GitHub warning)
+        # but do not turn the CI job red. Real test crashes still fail the job.
+        if os.getenv("FAIL_ON_FINDINGS", "true").strip().lower() in ("0", "false", "no"):
+            print(f"::warning title=Site findings::{len(REC.failures())} FAIL finding(s) in the report - see the uploaded artifact")
+        else:
+            session.exitstatus = 1
