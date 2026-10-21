@@ -6,27 +6,14 @@ import pytest
 
 from config import ALLOW_WRITE, ROLES, TEST_MARKER
 from pages.app_page import AppPage
+from qa_agent.legacy import load_legacy_workflows
 from utils.recorder import REC, Blocked
 
 T = "07_workflows"
 
-WORKFLOWS = [
-    dict(id="reception_patient_registration", role="reception",
-         title="Reception: register patient and find them again",
-         nav=[r"OPD", r"patient|registration|register"], create=r"register|new patient|add patient|create|\+", write=True),
-    dict(id="reception_appointment", role="reception",
-         title="Reception: create appointment / OPD encounter",
-         nav=[r"OPD", r"appointment|encounter|visit|queue"], create=r"new appointment|book|schedule|create|add|\+", write=True),
-    dict(id="doctor_open_record", role="doctor",
-         title="Doctor: view patients and open a record, then reopen",
-         nav=[r"OPD", r"appointment|patient|queue|consult"], create=None, write=False, open_first_row=True),
-    dict(id="nurse_assignments_visits_docs", role="nurse",
-         title="Nurse: Workspace -> Assignments -> Visits -> Documentation",
-         nav=[r"Assignments", r"Visits", r"Documentation"], create=None, write=False, each_nav_is_page=True),
-    dict(id="consumer_booking", role="consumer",
-         title="Consumer: browse care packages and start a booking",
-         nav=[r"care package|package|service"], create=r"book|select|add to cart|enrol|subscribe|choose", write=True, payment=True),
-]
+# The flow definitions moved out of Python into legacy_workflows.yml (data only, validated on load).
+# New, approval-gated YAML workflows run through `python agent.py run` (see workflows.yml).
+WORKFLOWS = load_legacy_workflows()
 
 
 # CI runs one site per job (APP_ONLY), so ROLES only holds that site's roles.

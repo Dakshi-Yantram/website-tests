@@ -1,0 +1,38 @@
+# Explicit environment declarations. This file - NOT the look of a URL - decides where writes may happen.
+#
+# kind: production  -> read-only, always. Writes can never be enabled.
+# kind: staging     -> writes possible ONLY if every rule in docs/STAGING_AND_SECURITY.md holds
+#                      (explicit allowed_origins, confirmation phrase, per-workflow --confirm-write, ...).
+# kind: local       -> same rules as staging; for localhost test servers.
+#
+# Anything not listed here is "unknown" and is treated as read-only (fail closed).
+version: 1
+
+# Extra origins that must never be a write target (production environments below are added automatically).
+production_origins: []
+
+environments:
+  production:
+    kind: production
+    apps:
+      nurseconnect:
+        base_url: https://nurseconnect.co.in
+      # ASSUMED production until you declare otherwise: the repo never said this host is a test deployment.
+      hospital:
+        base_url: http://hospitaldashboard-env.eba-n7anfees.ap-south-1.elasticbeanstalk.com
+
+  # ---- TEMPLATE: copy, fill in YOUR staging origins, remove the leading '#' --------------------------------------
+  # staging:
+  #   kind: staging
+  #   allowed_origins:                      # exact scheme://host[:port]; no wildcards
+  #     - https://staging.example.org
+  #     - https://hospital-staging.example.org
+  #   apps:
+  #     nurseconnect: {base_url: https://staging.example.org}
+  #     hospital:     {base_url: https://hospital-staging.example.org}
+  #   # allow_insecure: true               # needed only if a staging origin is plain http (non-localhost)
+  #   # OPTIONAL but recommended: the server itself says which environment it is. If present it MUST match.
+  #   verify:
+  #     path: /api/health                  # GET <origin>/api/health
+  #     json_key: environment              # dotted path into the JSON response
+  #     equals: staging-nurseconnect       # exact value the staging deployment reports
