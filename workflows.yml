@@ -140,7 +140,7 @@ workflows:
       the active environment is a declared staging environment and every confirmation in docs/STAGING_AND_SECURITY.md is given.
       Required fields not covered here (date of birth, gender chip, appointment time) must be added before use; the
       pytest phase tests/test_08_opd_registration.py contains the full, proven field handling.
-    status: approved
+    status: draft
     risk: medium
     writes: true
     role: reception
