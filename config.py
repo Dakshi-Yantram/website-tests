@@ -26,7 +26,8 @@ HEADLESS = env_bool("HEADLESS", True)
 SLOW_MO = int(os.getenv("SLOW_MO_MS", "0"))
 MAX_PAGES = int(os.getenv("MAX_PAGES_PER_ROLE", "40"))
 NAV_TIMEOUT = int(os.getenv("NAV_TIMEOUT_MS", "30000"))
-ALLOW_WRITE = env_bool("ALLOW_WRITE_TESTS", False)
+ALLOW_WRITE_REQUESTED = env_bool("ALLOW_WRITE_TESTS", False)
+ALLOW_WRITE = False          # final value is computed at the bottom of this file: writes need a VERIFIED staging environment
 # Only set true if a site has a broken certificate AND you accept that risk. Default: certificates are checked.
 IGNORE_HTTPS_ERRORS = env_bool("IGNORE_HTTPS_ERRORS", False)
 # A page that loads slower than this (browser "load" event, measured without extra waiting) is reported.
@@ -112,3 +113,35 @@ EXPECTED_MENU = {
 
 def secret_values():
     return [r.password for r in ROLES.values() if r.password]
+
+
+def _verified_write_permission() -> bool:
+    """ALLOW_WRITE_TESTS=true is only a request. Writes stay disabled (fail closed) unless TEST_ENV names an environment
+    declared kind staging|local in config/environments.yml, every active app's URL is in that environment's explicit
+    origin allowlist, and STAGING_WRITE_CONFIRMATION holds the confirmation phrase. See docs/STAGING_AND_SECURITY.md."""
+    if not ALLOW_WRITE_REQUESTED:
+        return False
+    import sys
+    from qa_agent.errors import SafetyBlocked
+    from qa_agent.safety import CONFIRM_PREFIX, get_environment, normalize_origin, verify_environment
+    try:
+        name = os.getenv("TEST_ENV", "").strip()
+        if not name:
+            raise SafetyBlocked("TEST_ENV is not set, so the environment cannot be verified")
+        env = get_environment(name)
+        if not env.is_staging_like:
+            raise SafetyBlocked(f"environment {name!r} is {env.kind}: production is read-only")
+        if os.getenv("STAGING_WRITE_CONFIRMATION", "") != CONFIRM_PREFIX + env.name:
+            raise SafetyBlocked("STAGING_WRITE_CONFIRMATION does not hold the confirmation phrase for this environment")
+        for key, app in APPS.items():
+            origin = normalize_origin(app.base)
+            if origin not in env.allowed_origins or origin in env.production_origins:
+                raise SafetyBlocked(f"{key} URL origin {origin} is not in the staging allowlist of {name!r}")
+            verify_environment(env, key)
+        return True
+    except SafetyBlocked as e:
+        print(f"[safety] ALLOW_WRITE_TESTS=true was IGNORED (read-only): {e}", file=sys.stderr)
+        return False
+
+
+ALLOW_WRITE = _verified_write_permission()

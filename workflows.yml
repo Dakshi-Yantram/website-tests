@@ -1,0 +1,155 @@
+# Workflow definitions executed by `python agent.py run`.   Schema: docs/WORKFLOW_SCHEMA.md
+#
+# * status: approved here only DECLARES intent. A workflow runs only when approvals/approvals.json holds a record whose
+#   hash matches this exact content:   python agent.py approve --id <id> --by "<you>" --reason "<why safe>"
+# * Credentials are never written here. `value_env` names an environment variable; `role` uses the same
+#   *_EMAIL / *_PASSWORD variables as the existing tests (see .env.example).
+# * Selectors below are NOT verified against the live sites (the repo did not contain verified selectors, except those
+#   marked "from test_08"). Check them with `python agent.py run --dry-run` first, then a read-only run.
+version: 1
+workflows:
+
+  # ------------------------------------------------------------------------------------------------ LOGIN
+  - id: nurseconnect_login_page_loads
+    app: nurseconnect
+    title: Login page renders a credentials form
+    description: Anonymous, read-only. Confirms the login page loads and shows an email and a password field.
+    status: approved
+    risk: low
+    writes: false
+    preconditions: [Public login page reachable]
+    expected_outcome: [Email and password inputs are visible, No write request is sent]
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: /auth/login, expected: Login page responds}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: Password field is visible}
+      - {action: expect_visible, target: {role: button, name: Log in}, expected: Login button is visible, optional: true}
+      - {action: expect_no_writes_sent, expected: Nothing was sent}
+
+  - id: nurseconnect_login_empty_submit
+    app: nurseconnect
+    title: Empty login submit is rejected client-side
+    description: Clicks the login button with empty fields while EVERY non-GET request is blocked; nothing reaches the server.
+    status: approved
+    risk: low
+    writes: false
+    preconditions: [Public login page reachable]
+    expected_outcome: [No credentials are sent, Validation feedback may be shown]
+    steps:
+      - {action: goto, path: /auth/login, expected: Login page responds}
+      - {action: guarded_submit, target: {role: button, name: Log in}, expected: Click happens with all writes blocked}
+      - {action: expect_no_writes_sent, expected: Nothing was sent}
+
+  - id: nurse_login_form
+    app: nurseconnect
+    title: Nurse can sign in through the login form
+    description: >
+      Fills the login form from environment variables NURSE_EMAIL / NURSE_PASSWORD and submits it. The only POST that
+      is allowed is the login/session request to the app's own origin. Values are never logged.
+    status: approved
+    risk: low
+    writes: false
+    preconditions: [NURSE_EMAIL and NURSE_PASSWORD are set for a TEST account]
+    expected_outcome: [User lands outside the login page]
+    steps:
+      - {action: goto, path: /auth/login, expected: Login page responds}
+      - {action: fill, target: {css: 'input[type="email"], input[name*="email" i], input[type="text"]'}, value_env: NURSE_EMAIL, expected: Email accepted}
+      - {action: fill, target: {css: 'input[type="password"]'}, value_env: NURSE_PASSWORD, expected: Password accepted}
+      - {action: login_submit, target: {role: button, name: Log in}, expected: Login request is sent}
+      - {action: expect_authenticated, timeout_ms: 20000, expected: No login form is showing}
+      - {action: expect_url, contains: /partner, expected: Nurse landing area, severity: Low}
+
+  # ------------------------------------------------------------------------------------------------ PAGE NAVIGATION
+  - id: nurse_workspace_navigation
+    app: nurseconnect
+    title: "Nurse: Assignments -> Visits -> Documentation"
+    description: Migrated from the hard-coded nurse_assignments_visits_docs workflow in test_07. Read-only menu navigation.
+    status: approved
+    risk: low
+    writes: false
+    role: nurse
+    preconditions: [NURSE_EMAIL / NURSE_PASSWORD set for a test account]
+    expected_outcome: [Each section opens without a login redirect]
+    steps:
+      - {action: open_section, pattern: Assignments, expected: Assignments opens}
+      - {action: expect_authenticated, expected: Still signed in}
+      - {action: open_section, pattern: Visits, expected: Visits opens}
+      - {action: expect_authenticated, expected: Still signed in}
+      - {action: open_section, pattern: Documentation, expected: Documentation opens}
+      - {action: expect_no_writes_sent, expected: Nothing was sent}
+
+  - id: doctor_opd_list_navigation
+    app: hospital
+    title: "Doctor: open the OPD queue"
+    description: Migrated from doctor_open_record in test_07 (navigation part only; clinical saves stay manual).
+    status: approved
+    risk: low
+    writes: false
+    role: doctor
+    preconditions: [DOCTOR_EMAIL / DOCTOR_PASSWORD set for a test account]
+    expected_outcome: [OPD section opens]
+    steps:
+      - {action: open_section, pattern: OPD, expected: OPD opens}
+      - {action: expect_authenticated, expected: Still signed in}
+      - {action: expect_no_writes_sent, expected: Nothing was sent}
+
+  # ------------------------------------------------------------------------------------------------ FORM VALIDATION
+  - id: hospital_opd_registration_validation
+    app: hospital
+    title: OPD registration - empty submit is rejected
+    description: >
+      Opens the Add-patient OPD form (route from test_08) and presses "Save Patient" with nothing filled, with all writes
+      blocked. Checks the browser/app validation without creating a patient.
+    status: approved
+    risk: low
+    writes: false
+    role: reception
+    preconditions: [RECEPTION_EMAIL / RECEPTION_PASSWORD set for a test account]
+    expected_outcome: [No patient is created, A required-field message appears]
+    steps:
+      - {action: goto, path: /hospital-dashboard/reception/addPatient/opd, expected: Form page loads}
+      - {action: expect_visible, target: {label: First Name}, expected: First Name field visible}
+      - {action: guarded_submit, target: {role: button, name: Save Patient}, expected: Submit attempted with writes blocked}
+      - {action: expect_text, matches: required, expected: A 'required' message is shown, severity: Low, optional: true}
+      - {action: expect_no_writes_sent, expected: Nothing was sent}
+
+  # ------------------------------------------------------------------------------------------------ BOOKING FLOW
+  - id: consumer_booking_flow_readonly
+    app: nurseconnect
+    title: Consumer - browse care packages and reach the booking step (no booking is made)
+    description: >
+      Representative booking flow, read-only: opens the care-package area, picks the first "Book" action and stops.
+      A real booking would create records and may lead to payment; payments are never automated.
+    status: approved
+    risk: medium
+    writes: false
+    role: consumer
+    preconditions: [CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account]
+    expected_outcome: [A booking entry point exists, No booking or payment is made]
+    steps:
+      - {action: open_section, pattern: 'care package|package|service', expected: Care packages open}
+      - {action: click, target: {role: button, name: Book}, expected: Booking step opens, optional: true}
+      - {action: expect_authenticated, expected: Still signed in}
+      - {action: expect_no_writes_sent, expected: Nothing was created}
+
+  - id: staging_opd_registration_create
+    app: hospital
+    title: STAGING ONLY - register a synthetic OPD patient
+    description: >
+      Representative write workflow. Creates ONE record tagged with AUTOTEST_<runid> and synthetic data. Runs only when
+      the active environment is a declared staging environment and every confirmation in docs/STAGING_AND_SECURITY.md is given.
+      Required fields not covered here (date of birth, gender chip, appointment time) must be added before use; the
+      pytest phase tests/test_08_opd_registration.py contains the full, proven field handling.
+    status: approved
+    risk: medium
+    writes: true
+    role: reception
+    preconditions: [Active environment is kind staging, Synthetic data only, RECEPTION_EMAIL / RECEPTION_PASSWORD set]
+    expected_outcome: [A patient named AUTOTEST appears in the list]
+    steps:
+      - {action: goto, path: /hospital-dashboard/reception/addPatient/opd, expected: Form page loads}
+      - {action: fill, target: {label: First Name}, value: '{{SYNTH_NAME}}', expected: Synthetic first name}
+      - {action: fill, target: {label: Last Name}, value: '{{MARKER}}', expected: Marker last name}
+      - {action: fill, target: {label: Mobile Number}, value: '{{SYNTH_PHONE}}', expected: Synthetic mobile number}
+      - {action: submit, target: {role: button, name: Save Patient}, expected: Patient is saved}
+      - {action: expect_text, contains: '{{MARKER}}', expected: Marker visible after save, timeout_ms: 15000}
