@@ -20,6 +20,9 @@ from playwright.sync_api import sync_playwright
 
 from config import APPS, DANGEROUS, INV, SHOTS, NAV_TIMEOUT
 from pages.login_page import PASS_SEL
+from qa_agent.artifacts import install_screenshot_guard
+
+install_screenshot_guard()      # screenshots honour SCREENSHOT_MODE (masked by default)
 
 LOGINISH = re.compile(r"log\s?-?in|sign\s?-?in|staff|doctor|reception|portal|continue|get started|access|authenticate", re.I)
 
