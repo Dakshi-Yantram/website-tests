@@ -1,26 +1,267 @@
 name: Website tests (NurseConnect + Hospital)
 
+# Jobs
+#   validate      no secrets. Validates YAML + environments + approvals integrity and runs the agent's own tests.
+#   discover      manual only. Mints a short-lived READ-ONLY GitHub App token, checks out the two private app repos
+#                 into apps/nurseconnect and apps/hospital, revokes the token, runs static discovery and draft generation.
+#                 Output is an artifact for HUMAN review - nothing is committed, approved or executed by this job.
+#   agent-tests   runs APPROVED YAML workflows read-only (one matrix entry per app), after the approval gate.
+#   agent-write   manual only, behind the protected GitHub Environment "staging-write" (required reviewers).
+#   nurseconnect / hospital   the original pytest phases (unchanged behaviour; read-only unless a VERIFIED staging env is configured).
+#
+# Third-party actions are pinned to exact release versions. Before you rely on this in production, replace each
+# `@vX.Y.Z` with the full commit SHA of that release (see docs/GITHUB_APP_SETUP.md, "Pinning actions").
+
 on:
   push:
     branches: [main]
+  pull_request:
   schedule:
     - cron: "30 2 * * *"      # daily 08:00 IST (GitHub cron is UTC)
   workflow_dispatch:
     inputs:
       phase:
-        description: "health | login | discovery | pages | forms | permissions | workflows | all"
+        description: "legacy pytest phase: health | login | discovery | pages | forms | permissions | workflows | all"
         default: "all"
+      run_discovery:
+        description: "Run source discovery + draft generation (needs the GitHub App secrets)"
+        type: boolean
+        default: false
+      allow_write:
+        description: "Run write-enabled workflows on STAGING (needs the staging-write environment approval)"
+        type: boolean
+        default: false
+      confirm_write_ids:
+        description: "Comma-separated workflow ids explicitly confirmed for writing (only used with allow_write)"
+        default: ""
+
+# Minimal token permissions for every job unless a job asks for less/more. No job needs more than read.
+permissions:
+  contents: read
 
 concurrency:
-  group: website-tests
+  group: website-tests-${{ github.ref }}
   cancel-in-progress: false
 
 env:
   PHASE: ${{ github.event.inputs.phase || 'all' }}
+  SCREENSHOT_MODE: masked
+  PYTHONUNBUFFERED: "1"
 
 jobs:
-  # 1st site
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-ci.txt
+          playwright install --with-deps chromium
+      - name: Validate workflow YAML, environments and approval audit chain
+        run: python agent.py validate --environments
+      - name: Agent self-tests (local server, synthetic data only)
+        run: python -m pytest agent_tests -q -p no:cacheprovider
+
+  discover:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_discovery }}
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GH_APP_ID: ${{ secrets.GH_APP_ID }}
+      GH_APP_INSTALLATION_ID: ${{ secrets.GH_APP_INSTALLATION_ID }}
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      NURSECONNECT_APP_REPO: ${{ vars.NURSECONNECT_APP_REPO }}
+      HOSPITAL_APP_REPO: ${{ vars.HOSPITAL_APP_REPO }}
+    steps:
+      - name: Fail safely if required secrets / variables are missing
+        run: |
+          missing=""
+          for n in GH_APP_ID GH_APP_INSTALLATION_ID GH_APP_PRIVATE_KEY NURSECONNECT_APP_REPO HOSPITAL_APP_REPO; do
+            if [ -z "${!n}" ]; then missing="$missing $n"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required secret/variable(s):$missing - see docs/GITHUB_APP_SETUP.md. Nothing was checked out."
+            exit 1
+          fi
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-ci.txt
+          playwright install --with-deps chromium
+      - name: Mint short-lived read-only installation token
+        id: app
+        run: python tools/github_app_token.py mint --repo "$NURSECONNECT_APP_REPO" --repo "$HOSPITAL_APP_REPO"
+      - name: Check out NurseConnect application (read-only)
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: ${{ vars.NURSECONNECT_APP_REPO }}
+          token: ${{ steps.app.outputs.token }}
+          path: apps/nurseconnect
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check out Hospital application (read-only)
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: ${{ vars.HOSPITAL_APP_REPO }}
+          token: ${{ steps.app.outputs.token }}
+          path: apps/hospital
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Revoke the token now that checkout is done
+        if: ${{ always() && steps.app.outputs.token != '' }}
+        env:
+          GH_APP_TOKEN: ${{ steps.app.outputs.token }}
+        run: python tools/github_app_token.py revoke
+      - name: Static discovery (no application code is executed, no token needed)
+        run: python agent.py discover --app nurseconnect=apps/nurseconnect --app hospital=apps/hospital --strict
+      - name: Generate DRAFT workflows (not approved, not executable)
+        run: python agent.py draft
+      - name: Validate drafts against the strict generated-draft rules
+        run: |
+          files=$(find workflow_drafts -name '*.yml' | sort)
+          if [ -n "$files" ]; then
+            args=""; for f in $files; do args="$args --file $f"; done
+            python agent.py validate --drafts $args
+          fi
+      - name: Redact and scan outputs before upload
+        run: |
+          python agent.py scan-artifacts artifacts/discovery --fix
+          python agent.py scan-artifacts workflow_drafts --fix
+      - uses: actions/upload-artifact@v4.4.3
+        with:
+          name: discovery-and-drafts
+          path: |
+            artifacts/discovery/
+            workflow_drafts/
+          retention-days: 14
+          if-no-files-found: error
+
+  agent-tests:
+    needs: validate
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [nurseconnect, hospital]
+    env:
+      TEST_ENV: ${{ vars.TEST_ENV_NAME }}          # empty = unverified environment => strictly read-only
+      NURSE_EMAIL: ${{ secrets.NURSE_EMAIL }}
+      NURSE_PASSWORD: ${{ secrets.NURSE_PASSWORD }}
+      CONSUMER_EMAIL: ${{ secrets.CONSUMER_EMAIL }}
+      CONSUMER_PASSWORD: ${{ secrets.CONSUMER_PASSWORD }}
+      RECEPTION_EMAIL: ${{ secrets.RECEPTION_EMAIL }}
+      RECEPTION_PASSWORD: ${{ secrets.RECEPTION_PASSWORD }}
+      DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
+      DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
+      APP_ONLY: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+      - name: Approval gate (fails if any workflow is unapproved or changed after approval)
+        run: python agent.py check-approvals
+      - name: Run approved workflows (read-only)
+        run: python agent.py run --app "${{ matrix.app }}" --read-only --fail-on-blocked ${TEST_ENV:+--env "$TEST_ENV"}
+      - name: Redact and scan reports
+        if: always()
+        run: python agent.py scan-artifacts artifacts --fix
+      - uses: actions/upload-artifact@v4.4.3
+        if: always()
+        with:
+          name: agent-report-${{ matrix.app }}
+          path: artifacts/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  agent-write:
+    # Never automatic. Needs: manual dispatch + allow_write + approval by the reviewers of the "staging-write" Environment.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_write }}
+    needs: agent-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging-write
+    concurrency:
+      group: staging-write-${{ vars.STAGING_ENV_NAME }}      # one write run per staging environment at a time
+      cancel-in-progress: false
+    env:
+      TEST_ENV: ${{ vars.STAGING_ENV_NAME }}
+      STAGING_WRITE_CONFIRMATION: ${{ secrets.STAGING_WRITE_CONFIRMATION }}
+      ALLOW_WRITE_TESTS: "true"
+      CONFIRM_IDS: ${{ inputs.confirm_write_ids }}
+      NURSE_EMAIL: ${{ secrets.STAGING_NURSE_EMAIL }}
+      NURSE_PASSWORD: ${{ secrets.STAGING_NURSE_PASSWORD }}
+      CONSUMER_EMAIL: ${{ secrets.STAGING_CONSUMER_EMAIL }}
+      CONSUMER_PASSWORD: ${{ secrets.STAGING_CONSUMER_PASSWORD }}
+      RECEPTION_EMAIL: ${{ secrets.STAGING_RECEPTION_EMAIL }}
+      RECEPTION_PASSWORD: ${{ secrets.STAGING_RECEPTION_PASSWORD }}
+      DOCTOR_EMAIL: ${{ secrets.STAGING_DOCTOR_EMAIL }}
+      DOCTOR_PASSWORD: ${{ secrets.STAGING_DOCTOR_PASSWORD }}
+    steps:
+      - name: Fail safely if staging configuration is missing
+        run: |
+          for n in TEST_ENV STAGING_WRITE_CONFIRMATION CONFIRM_IDS; do
+            if [ -z "${!n}" ]; then echo "::error::$n is empty - refusing to run write tests (see docs/STAGING_AND_SECURITY.md)"; exit 1; fi
+          done
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
+        with: { python-version: "3.11", cache: pip }
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+      - name: Approval gate
+        run: python agent.py check-approvals
+      - name: Verify the environment is declared staging (fail closed)
+        run: |
+          python agent.py verify-env --env "$TEST_ENV" --app nurseconnect
+          python agent.py verify-env --env "$TEST_ENV" --app hospital
+      - name: Run confirmed write workflows on staging
+        run: |
+          args=""
+          IFS=',' read -ra ids <<< "$CONFIRM_IDS"
+          for i in "${ids[@]}"; do args="$args --confirm-write $(echo "$i" | tr -d ' ') --workflow $(echo "$i" | tr -d ' ')"; done
+          python agent.py run --env "$TEST_ENV" --app all --allow-write --fail-on-blocked $args
+      - name: Redact and scan reports
+        if: always()
+        run: python agent.py scan-artifacts artifacts --fix
+      - uses: actions/upload-artifact@v4.4.3
+        if: always()
+        with:
+          name: agent-write-report
+          path: artifacts/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ------------------------------------------------------------------ original pytest phases (unchanged behaviour)
   nurseconnect:
+    if: ${{ github.event_name != 'pull_request' }}
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -30,12 +271,17 @@ jobs:
       CONSUMER_EMAIL: ${{ secrets.CONSUMER_EMAIL }}
       CONSUMER_PASSWORD: ${{ secrets.CONSUMER_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
         with: { python-version: "3.11", cache: pip }
       - run: pip install -r requirements.txt && playwright install --with-deps chromium
       - run: python run.py --phase "$PHASE"
-      - uses: actions/upload-artifact@v4
+      - name: Redact and scan reports
+        if: always()
+        run: python agent.py scan-artifacts artifacts --fix
+      - uses: actions/upload-artifact@v4.4.3
         if: always()
         with:
           name: nurseconnect-report
@@ -44,8 +290,8 @@ jobs:
 
   # 2nd site: starts only after the first finished (even if it failed)
   hospital:
-    needs: nurseconnect
-    if: ${{ !cancelled() }}
+    needs: [validate, nurseconnect]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -57,12 +303,17 @@ jobs:
       DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
       DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5.3.0
         with: { python-version: "3.11", cache: pip }
       - run: pip install -r requirements.txt && playwright install --with-deps chromium
       - run: python run.py --phase "$PHASE"
-      - uses: actions/upload-artifact@v4
+      - name: Redact and scan reports
+        if: always()
+        run: python agent.py scan-artifacts artifacts --fix
+      - uses: actions/upload-artifact@v4.4.3
         if: always()
         with:
           name: hospital-report
