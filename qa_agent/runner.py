@@ -373,7 +373,12 @@ class Runner:
             kw = {"exact": bool(t.get("exact", False))}
             if "name" in t:
                 kw["name"] = t["name"]
-            loc = page.get_by_role(t["role"], **kw)
+            if t["role"] == "button" and re.fullmatch(r"(?i)\s*(log\s?-?in|sign\s?-?in)\s*", str(t.get("name", ""))):
+                # "Log in" / "Login" / "Sign in" are the same button: use the legacy suite's tolerant selector.
+                from pages.login_page import SUBMIT_SEL
+                loc = page.locator(SUBMIT_SEL)
+            else:
+                loc = page.get_by_role(t["role"], **kw)
         elif "label" in t:
             loc = page.get_by_label(t["label"], exact=bool(t.get("exact", False)))
         elif "placeholder" in t:

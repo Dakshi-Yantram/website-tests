@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV_FILE = Path(os.getenv("QA_ENV_FILE") or ROOT / "config" / "environments.yml")
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 # Login-style POSTs create a session, not business data. They are allowed to the app's own origin only.
-AUTH_PATH_RX = re.compile(r"(?:^|/)(?:auth|authenticate|login|signin|sign-in|token|session)(?:/|$)", re.I)
+AUTH_PATH_RX = re.compile(r"(?:^|/)(?:[a-z]*(?:login|log-in|signin|sign-in)|auth|authenticate|token|session)(?:/|$)", re.I)  # also emailLogin, phoneLogin ...
 CONFIRM_PREFIX = "I-CONFIRM-STAGING-WRITES-ON-"
 
 
