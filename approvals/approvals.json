@@ -1,0 +1,68 @@
+{
+  "approvals": {
+    "consumer_booking_flow_readonly": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "7c76073a63ffa9efce22f5de0300e3a3d2d40ad7d282929f88d08c6af79386b2",
+      "reason": "Reviewed; booking flow stops before creating a booking",
+      "risk": "medium",
+      "writes": false
+    },
+    "doctor_opd_list_navigation": {
+      "app": "hospital",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ebec03e8ad3c925435263fba354dacb805e820e83869fa2f66fc67ff30a16eb2",
+      "reason": "Reviewed; read-only OPD navigation",
+      "risk": "low",
+      "writes": false
+    },
+    "hospital_opd_registration_validation": {
+      "app": "hospital",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "26a5304c382a96048d92bcaeb14ab2cf75326e75b9f28521fa9c54defb286421",
+      "reason": "Reviewed; validation test with writes blocked",
+      "risk": "low",
+      "writes": false
+    },
+    "nurse_login_form": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2ff23a0c027394b5a5bf422be11dfe825b69c56863367c20e09edc7bbebb87c3",
+      "reason": "Reviewed; test account login only",
+      "risk": "low",
+      "writes": false
+    },
+    "nurse_workspace_navigation": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "12f8170d170a7e91859138b03206540f61e228a5cf40160ab46e8371e27e9efe",
+      "reason": "Reviewed; read-only navigation",
+      "risk": "low",
+      "writes": false
+    },
+    "nurseconnect_login_empty_submit": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "55d1da2d1c364b1f4cf5737da8af4b2899f1e3532f856c02dffc5da871cdfed1",
+      "reason": "Reviewed; empty submit with all writes blocked",
+      "risk": "low",
+      "writes": false
+    },
+    "nurseconnect_login_page_loads": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:26+00:00",
+      "approved_by": "Dakshi",
+      "hash": "82e2a6439f7ecd29b9f65623c263c734a3e321008b2908564e308e6b1b76cc2a",
+      "reason": "Reviewed; public login page check only, no writes",
+      "risk": "low",
+      "writes": false
+    }
+  },
+  "version": 1
+}
