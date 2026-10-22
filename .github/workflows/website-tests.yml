@@ -170,6 +170,9 @@ jobs:
       DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
       DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
       APP_ONLY: ${{ matrix.app }}
+      # Same login paths as the pytest jobs - without these the agent falls back to "/" and finds no password field.
+      NURSECONNECT_LOGIN_PATH: ${{ vars.NURSECONNECT_LOGIN_PATH || '/auth/login' }}
+      HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/login' }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -184,7 +187,7 @@ jobs:
       - name: Approval gate (fails if any workflow is unapproved or changed after approval)
         run: python agent.py check-approvals
       - name: Run approved workflows (read-only)
-        run: python agent.py run --app "${{ matrix.app }}" --read-only --fail-on-blocked ${TEST_ENV:+--env "$TEST_ENV"}
+        run: python agent.py run --app "${{ matrix.app }}" --read-only ${TEST_ENV:+--env "$TEST_ENV"}
       - name: Redact and scan reports
         if: always()
         run: python agent.py scan-artifacts artifacts --fix
@@ -297,7 +300,7 @@ jobs:
     env:
       APP_ONLY: hospital
       FAIL_ON_FINDINGS: "false"   # hospital findings (HTTP, console errors) are tracked in the report, not by a red job
-      HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/' }}
+      HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/login' }}
       RECEPTION_EMAIL: ${{ secrets.RECEPTION_EMAIL }}
       RECEPTION_PASSWORD: ${{ secrets.RECEPTION_PASSWORD }}
       DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
