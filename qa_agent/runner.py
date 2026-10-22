@@ -280,6 +280,12 @@ class Runner:
                     sr.status, sr.error = "FAIL", redact(str(e))
                 except Exception as e:
                     sr.status, sr.error = "FAIL", redact(f"{type(e).__name__}: {str(e).splitlines()[0][:200] if str(e) else ''}")
+                if sr.status == "FAIL":
+                    # Diagnostics for a failed login: which requests failed / were blocked (query strings dropped, redacted).
+                    bits = [x.split("?")[0][:160] for x in (mon.failed[:3] + guard.blocked[:3])]
+                    bits += [c[:160] for c in mon.console[:2]]
+                    if bits:
+                        sr.error = redact(f"{sr.error} | network: " + " ; ".join(bits))
                 sr.duration_s, sr.url = round(time.time() - t0, 2), redact(page.url)
                 sr.actual = sr.actual or sr.error
                 if sr.status != "PASS":
