@@ -255,7 +255,9 @@ class Runner:
         origin = normalize_origin(base)
         ctx = browser.new_context(viewport={"width": cfg.viewport[0], "height": cfg.viewport[1]}, ignore_https_errors=cfg.ignore_https_errors,
                                   accept_downloads=False, service_workers="block")
-        guard = RequestGuard(cfg.env, origin, writes_enabled=bool(wf["writes"]))
+        # Login/session POSTs (paths matching AUTH_PATH_RX only) may go to a separate API host, exactly like the legacy pytest
+        # suite. Needed because these apps' login API is not on the page origin. Write-enabled workflows stay strict.
+        guard = RequestGuard(cfg.env, origin, writes_enabled=bool(wf["writes"]), auth_any_origin=not wf["writes"])
         guard.attach(ctx)
         page = ctx.new_page()
         mon = PageMonitor(page)
