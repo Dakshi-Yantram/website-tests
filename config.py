@@ -60,7 +60,7 @@ APPS = {
                         os.getenv("NURSECONNECT_LOGIN_PATH", "/auth/login")),
     "hospital": App("hospital",
                     os.getenv("HOSPITAL_URL", "http://hospitaldashboard-env.eba-n7anfees.ap-south-1.elasticbeanstalk.com"),
-                    os.getenv("HOSPITAL_LOGIN_PATH", "/")),
+                    os.getenv("HOSPITAL_LOGIN_PATH", "/login")),
 }
 
 
