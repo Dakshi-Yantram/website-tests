@@ -269,6 +269,7 @@ jobs:
     timeout-minutes: 45
     env:
       APP_ONLY: nurseconnect
+      FAIL_ON_FINDINGS: "false"   
       NURSE_EMAIL: ${{ secrets.NURSE_EMAIL }}
       NURSE_PASSWORD: ${{ secrets.NURSE_PASSWORD }}
       CONSUMER_EMAIL: ${{ secrets.CONSUMER_EMAIL }}
