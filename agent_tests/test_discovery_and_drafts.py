@@ -159,7 +159,10 @@ def test_sensitive_files_are_never_read_or_reported(result, mock_repo):
 def test_symlink_escape_is_not_followed(mock_repo, tmp_path):
     outside = tmp_path / "outside.jsx"
     outside.write_text("<Route path='/leaked' element={<X/>} />")
-    (mock_repo / "src" / "link.jsx").symlink_to(outside)
+    try:
+        (mock_repo / "src" / "link.jsx").symlink_to(outside)
+    except OSError as e:          # Windows without Developer Mode / admin rights cannot create symlinks (WinError 1314)
+        pytest.skip(f"cannot create a symlink on this machine: {e}")
     res = D.analyze_repo(mock_repo, "nurseconnect")
     assert "/leaked" not in routes_by_path(res)
     assert any(s["reason"] == "symlink" for s in res["skipped"])

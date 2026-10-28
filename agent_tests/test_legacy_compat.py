@@ -15,6 +15,10 @@ from qa_agent.safety import CONFIRM_PREFIX
 
 def run_py(args, env_extra, tmp_path, timeout=300):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("NURSE", "CONSUMER", "RECEPTION", "DOCTOR", "TEST_ENV", "ALLOW_WRITE", "STAGING_", "APP_ONLY", "QA_ENV"))}
+    # config.py calls load_dotenv(), which would pull REAL credentials from a developer's local .env into this subprocess.
+    # Setting the names to "" (load_dotenv never overrides an existing variable) keeps these self-tests credential-free.
+    env.update({k: "" for k in ("NURSE_EMAIL", "NURSE_PASSWORD", "CONSUMER_EMAIL", "CONSUMER_PASSWORD",
+                                "RECEPTION_EMAIL", "RECEPTION_PASSWORD", "DOCTOR_EMAIL", "DOCTOR_PASSWORD")})
     env.update({"ARTIFACTS_DIR": str(tmp_path / "artifacts"), "PYTHONDONTWRITEBYTECODE": "1", "HEADLESS": "true"})
     env.update(env_extra)
     return subprocess.run([sys.executable, *args], cwd=ROOT, env=env, capture_output=True, text=True, timeout=timeout)
