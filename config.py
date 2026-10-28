@@ -94,12 +94,21 @@ ROLES = {
     "reception": Role("reception", "hospital", "RECEPTION_EMAIL", "RECEPTION_PASSWORD", "RECEPTION_LANDING_PATH", ""),
     "doctor": Role("doctor", "hospital", "DOCTOR_EMAIL", "DOCTOR_PASSWORD", "DOCTOR_LANDING_PATH", ""),
 }
+# Roles used ONLY by the YAML agent (qa_agent). They are kept out of ROLES on purpose: the legacy pytest suite parametrizes every
+# test over ROLES, so adding them there would add (BLOCKED, credential-less) legacy tests and change the legacy report.
+# Landing paths are unknown until confirmed on staging.
+AGENT_ROLES = {
+    "operations": Role("operations", "nurseconnect", "OPS_EMAIL", "OPS_PASSWORD", "OPS_LANDING_PATH", ""),
+    "reviewer": Role("reviewer", "nurseconnect", "REVIEWER_EMAIL", "REVIEWER_PASSWORD", "REVIEWER_LANDING_PATH", ""),
+    "admin": Role("admin", "nurseconnect", "ADMIN_EMAIL", "ADMIN_PASSWORD", "ADMIN_LANDING_PATH", ""),
+}
 _ONLY = os.getenv("APP_ONLY", "").strip().lower()
 if _ONLY:
     if _ONLY not in APPS:
         raise SystemExit(f"APP_ONLY must be one of {list(APPS)}")
     APPS = {k: v for k, v in APPS.items() if k == _ONLY}
     ROLES = {k: v for k, v in ROLES.items() if v.app == _ONLY}
+    AGENT_ROLES = {k: v for k, v in AGENT_ROLES.items() if v.app == _ONLY}
 
 # Menu items you showed in screenshots. Used to verify they are really present.
 EXPECTED_MENU = {
@@ -112,7 +121,7 @@ EXPECTED_MENU = {
 
 
 def secret_values():
-    return [r.password for r in ROLES.values() if r.password]
+    return [r.password for r in list(ROLES.values()) + list(AGENT_ROLES.values()) if r.password]
 
 
 def _verified_write_permission() -> bool:

@@ -90,7 +90,7 @@ def default_login(page, role_name: str, base_url: str):
     """Reuse the existing heuristic LoginPage + config.ROLES credentials (read from environment variables)."""
     import config
     from pages.login_page import LoginPage
-    role = config.ROLES.get(role_name)
+    role = config.ROLES.get(role_name) or config.AGENT_ROLES.get(role_name)
     if role is None:
         raise StepBlocked(f"Unknown role {role_name!r} (not defined in config.ROLES or filtered by APP_ONLY)")
     if not role.email or not role.password:
@@ -184,6 +184,9 @@ class Runner:
             return "BLOCKED", str(e), state
         if self.cfg.env is not None and self.cfg.env.kind in ("staging", "local") and origin not in self.cfg.env.allowed_origins:
             return "BLOCKED", f"Base URL origin {origin} is not in the allowlist of environment {self.cfg.env.name!r}", state
+        if wf.get("staging_only") and not (self.cfg.env is not None and self.cfg.env.kind in ("staging", "local")):
+            return "BLOCKED", ("STAGING-ONLY workflow (e.g. brute-force / lockout probe): it needs a declared staging or local "
+                               "environment and never runs against production or an unknown environment"), state
         if wf["writes"]:
             if self.cfg.mode == "read-only":
                 return "NOT TESTED", "read-only mode: workflow writes test records", state
@@ -436,6 +439,11 @@ class Runner:
 
     def _do(self, page, guard, wf, st, base, origin, values, timeout, res) -> str:
         a = st["action"]
+        if isinstance(st.get("target"), dict):
+            # Synthetic-data templates are allowed in text-like target fields so a later role can open the record an earlier
+            # role created in the same run (e.g. text: "{{SYNTH_NAME}}"). Only the fixed template variables expand.
+            st = dict(st, target={k: (expand(v, values) if k in ("name", "label", "text", "placeholder") and isinstance(v, str) else v)
+                                  for k, v in st["target"].items()})
         if a == "goto":
             url = origin + expand(st["path"], values)
             if normalize_origin(url) != origin:
