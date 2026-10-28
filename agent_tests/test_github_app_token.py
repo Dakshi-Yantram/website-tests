@@ -203,7 +203,7 @@ def test_ci_scans_before_every_upload(ci):
 
 def test_no_credentials_in_repo_files():
     from qa_agent.discovery import has_hard_secret
-    skip = {".git", "artifacts", "__pycache__", ".pytest_cache"}
+    skip = {".git", ".venv", "venv", "node_modules", "artifacts", "__pycache__", ".pytest_cache"}   # third-party code is not ours to scan
     bad = []
     for p in ROOT.rglob("*"):
         if p.is_file() and not (set(p.relative_to(ROOT).parts) & skip) and p.suffix in {".py", ".yml", ".yaml", ".md", ".txt", ".json", ".bat", ".example", ".ini"} \

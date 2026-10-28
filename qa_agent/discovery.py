@@ -65,13 +65,13 @@ def iter_source_files(root: Path, skipped: list):
         kept = []
         for d in sorted(dirnames):
             if d in SKIP_DIRS or d.lower() in SKIP_DIRS:
-                skipped.append({"file": str((Path(dirpath) / d).relative_to(root)) + "/", "reason": "excluded directory"})
+                skipped.append({"file": (Path(dirpath) / d).relative_to(root).as_posix() + "/", "reason": "excluded directory"})
             else:
                 kept.append(d)
         dirnames[:] = kept
         for fn in sorted(filenames):
             p = Path(dirpath) / fn
-            rel = str(p.relative_to(root))
+            rel = p.relative_to(root).as_posix()      # always forward slashes, also on Windows
             if p.is_symlink():
                 skipped.append({"file": rel, "reason": "symlink"})
                 continue
