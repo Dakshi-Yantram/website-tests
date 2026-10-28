@@ -16,6 +16,7 @@ workflows:
     role: reception                              # optional: log in first with that role's *_EMAIL/*_PASSWORD env vars
     preconditions: [..]   expected_outcome: [..] sources: [{file: src/App.jsx, line: 12}]   # sources/preconditions are required for generated drafts
     timeout_ms: 30000                            # default for every step (500..120000)
+    staging_only: true                           # optional: BLOCKED unless the environment is declared staging/local (brute-force / lockout probes)
     steps:
       - action: goto
         path: /hospital-dashboard/reception/addPatient/opd
@@ -51,7 +52,7 @@ target: {role: button, name: Save Patient}     target: {label: First Name}     t
 | `expect_no_writes_sent` | - | nothing non-GET (other than login) reached the server |
 | `screenshot` | `name` | masked per `SCREENSHOT_MODE` |
 
-## Synthetic-data templates (only these are allowed in `value` / `contains` / `path`)
+## Synthetic-data templates (also allowed inside target `name` / `label` / `text` / `placeholder`) (only these are allowed in `value` / `contains` / `path`)
 `{{RUN_ID}}` `{{MARKER}}` (`AUTOTEST_<run>`) `{{WF_ID}}` `{{SYNTH_PHONE}}` `{{SYNTH_EMAIL}}` (`...@example.invalid`) `{{SYNTH_NAME}}`.
 Values are unique per run and workflow. Literal phone numbers, e-mails, IDs or token-like strings in `value` are rejected.
 
@@ -59,3 +60,8 @@ Values are unique per run and workflow. Literal phone numbers, e-mails, IDs or t
 `file not found` - `not valid YAML at line N` - `unknown action 'clik' (did you mean 'click'?)` - `step 3 (click): missing required key(s) ['target']` -
 `path must be a site-relative path` - `target looks destructive / payment / messaging related` - `writes is false but contains a write action` -
 at run time: `Element not found within N ms: role='button', name='...'`, `Timeout after N ms`, `Navigation error: ...`, `HTTP 404 for /x`.
+
+## Multi-role chains
+`{{MARKER}}`, `{{SYNTH_NAME}}` and `{{RUN_ID}}` are the same for every workflow of one `agent.py run`; `{{WF_ID}}`, `{{SYNTH_PHONE}}`
+and `{{SYNTH_EMAIL}}` differ per workflow. A record created by one role can therefore be opened by a later role with
+`target: {text: "{{SYNTH_NAME}}"}`. Workflows run in file order. Each workflow logs in with ONE role (`role:`); a chain is one workflow per role.

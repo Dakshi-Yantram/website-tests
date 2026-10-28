@@ -28,6 +28,8 @@ PAGES = {
       <button id="save" onclick="fetch('/api/save',{method:'POST',body:JSON.stringify({a:1})}).then(()=>{document.getElementById('msg').innerText='saved'}).catch(()=>{document.getElementById('msg').innerText='This field is required'})">Save Patient</button>
       <button onclick="fetch('/api/delete',{method:'POST'})">Delete record</button>
       <p id="msg"></p></body></html>""",
+    # echoes ?q= into the page so tests can prove that {{TEMPLATE}} values in targets are expanded
+    "/echo": "<html><title>Echo</title><body><h1>Echo</h1><p id='e'></p><script>document.getElementById('e').textContent=decodeURIComponent(location.search.slice(3))</script></body></html>",
     "/slow": "<html><title>Slow</title><body><h1>ok</h1></body></html>",
 }
 

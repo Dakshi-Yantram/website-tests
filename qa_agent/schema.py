@@ -75,7 +75,7 @@ ACTIONS = {
 WRITE_ACTIONS = {a for a, (_, _, w) in ACTIONS.items() if w}
 STEP_KEYS = {"id", "action", "expected", "timeout_ms", "severity", "optional"}
 WORKFLOW_KEYS = {"id", "app", "title", "description", "status", "risk", "writes", "role", "preconditions",
-                 "expected_outcome", "sources", "timeout_ms", "steps", "generated", "approval", "tags"}
+                 "expected_outcome", "sources", "timeout_ms", "steps", "generated", "approval", "tags", "staging_only"}
 
 
 def _near(word, options):
@@ -123,6 +123,12 @@ def _check_target(t, where, problems):
         problems.append(f"{where}: unsupported ARIA role {v!r}{_near(v, ROLES_OK)}")
     if "name" in t and k != "role":
         problems.append(f"{where}: target.name is only valid together with role")
+    for tk in ("name", "label", "text", "placeholder"):
+        tv = t.get(tk)
+        if isinstance(tv, str):
+            for m in TEMPLATE_RX.finditer(tv):
+                if m.group(1) not in TEMPLATE_VARS:
+                    problems.append(f"{where}: unknown template variable {{{{{m.group(1)}}}}} in target.{tk}; allowed: {sorted(TEMPLATE_VARS)}")
     if "css" == k and re.search(r"(?i)javascript:|<script|\bexpression\(", v):
         problems.append(f"{where}: css selector contains script content")
     if "nth" in t and (not isinstance(t["nth"], int) or t["nth"] < 0 or t["nth"] > 50):
@@ -251,6 +257,9 @@ def validate_workflow(wf, *, draft_rules: bool = False) -> list:
             problems.append(f"{where}: target looks destructive / payment / messaging related (never allowed in any workflow)")
         if is_write:
             has_write_step = True
+
+    if "staging_only" in wf and not isinstance(wf["staging_only"], bool):
+        problems.append(f"{label}: staging_only must be true or false")
 
     writes = wf.get("writes")
     if isinstance(writes, bool):

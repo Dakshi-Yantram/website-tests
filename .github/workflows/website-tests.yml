@@ -222,6 +222,14 @@ jobs:
       RECEPTION_PASSWORD: ${{ secrets.STAGING_RECEPTION_PASSWORD }}
       DOCTOR_EMAIL: ${{ secrets.STAGING_DOCTOR_EMAIL }}
       DOCTOR_PASSWORD: ${{ secrets.STAGING_DOCTOR_PASSWORD }}
+      OPS_EMAIL: ${{ secrets.STAGING_OPS_EMAIL }}
+      OPS_PASSWORD: ${{ secrets.STAGING_OPS_PASSWORD }}
+      REVIEWER_EMAIL: ${{ secrets.STAGING_REVIEWER_EMAIL }}
+      REVIEWER_PASSWORD: ${{ secrets.STAGING_REVIEWER_PASSWORD }}
+      ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+      LOCKOUT_EMAIL: ${{ secrets.STAGING_LOCKOUT_EMAIL }}          # dedicated throw-away account used by the lockout test
+      LOCKOUT_PASSWORD: ${{ secrets.STAGING_LOCKOUT_PASSWORD }}
     steps:
       - name: Fail safely if staging configuration is missing
         run: |
