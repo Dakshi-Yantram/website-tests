@@ -1,4 +1,5 @@
 """Shared fixtures: one browser, one independent logged-in context per role, cached inventories."""
+import os
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -12,6 +13,12 @@ from pages.discovery import crawl
 from utils.monitor import PageMonitor
 from utils.recorder import REC, Blocked
 from utils.report import write_reports
+from qa_agent.artifacts import install_screenshot_guard
+from qa_agent.safety import RequestGuard
+from config import ALLOW_WRITE
+import config as _cfg
+
+install_screenshot_guard()          # every screenshot in the legacy suite is masked unless SCREENSHOT_MODE says otherwise
 
 ROLE_NAMES = list(ROLES)
 APP_NAMES = list(APPS)
@@ -44,9 +51,20 @@ def browser():
 def new_context(browser):
     made = []
 
-    def _new():
+    def _new(app_key=None):
         ctx = browser.new_context(viewport={"width": 1440, "height": 900}, ignore_https_errors=IGNORE_HTTPS_ERRORS)
         ctx.set_default_timeout(NAV_TIMEOUT)
+        if app_key in APPS:
+            # Defence in depth: non-GET requests (other than login/session calls) are aborted unless writes were VERIFIED.
+            try:
+                env = None
+                if ALLOW_WRITE:
+                    from qa_agent.safety import get_environment
+                    env = get_environment(os.getenv("TEST_ENV", ""))
+                RequestGuard(env, APPS[app_key].base, writes_enabled=ALLOW_WRITE, auth_any_origin=True).attach(ctx)
+            except Exception as e:           # fail closed: no guard => no context
+                ctx.close()
+                raise RuntimeError(f"Could not attach the write guard ({type(e).__name__}); refusing to run") from e
         made.append(ctx)
         return ctx
 
@@ -72,7 +90,7 @@ def sessions(new_context):
             s.blocked = f"Set {role.email_env} and {role.password_env} in .env"
             s.config_problem = True
             return s
-        s.context = new_context()
+        s.context = new_context(role.app)
         s.page = s.context.new_page()
         s.mon = PageMonitor(s.page)
         lp = LoginPage(s.page, APPS[role.app].login_url, role.landing_prefix)
@@ -126,7 +144,14 @@ def need_session(sessions):
 
 
 def pytest_sessionfinish(session, exitstatus):
+    if not REC.steps:                      # e.g. only agent_tests/ ran: no legacy report to write
+        return
     html_path, json_path = write_reports(REC)
     print(f"\n\nHTML report: {html_path}\nJSON report: {json_path}\nSummary: {REC.summary()}")
     if REC.failures() and exitstatus == 0:
-        session.exitstatus = 1
+        # FAIL_ON_FINDINGS=false: site findings stay in the report (and show as a GitHub warning)
+        # but do not turn the CI job red. Real test crashes still fail the job.
+        if os.getenv("FAIL_ON_FINDINGS", "true").strip().lower() in ("0", "false", "no"):
+            print(f"::warning title=Site findings::{len(REC.failures())} FAIL finding(s) in the report - see the uploaded artifact")
+        else:
+            session.exitstatus = 1

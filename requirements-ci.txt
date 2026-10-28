@@ -1,0 +1,2 @@
+# Extra packages used ONLY by tools/github_app_token.py in the discovery job (mints the GitHub App installation token).
+PyJWT[crypto]>=2.8
