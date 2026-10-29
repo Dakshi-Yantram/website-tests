@@ -1,8 +1,8 @@
 # NurseConnect end-to-end + edge-case + security workflows  (agent schema v1, see docs/WORKFLOW_SCHEMA.md)
 #
 # STATUS: every workflow is `draft`. Nothing here runs until a human reviews it and approves it:
-#     python agent.py validate --drafts --file workflow_drafts/nurseconnect_e2e.yml
-#     python agent.py approve --file workflow_drafts/nurseconnect_e2e.yml --by "<you>" --reason "<why>" --i-understand-this-writes
+#     python agent.py validate --drafts --file workflow_drafts/nurseconnect/e2e_edge_security.yml
+#     python agent.py approve --file workflow_drafts/nurseconnect/e2e_edge_security.yml --by "<you>" --reason "<why>" --i-understand-this-writes
 #
 # HOW THE CHAIN WORKS: workflows run one after another in this file's order inside ONE `agent.py run` (one run id).
 # {{MARKER}} / {{SYNTH_NAME}} are identical for all workflows of that run, so the customer leg creates a booking named
@@ -638,7 +638,7 @@ workflows:
   - id: sec_03_anonymous_cannot_open_staff_areas
     app: nurseconnect
     title: "Security: an anonymous visitor cannot open operations / reviewer / admin areas"
-    description: "The three paths are guesses; unknown routes show as NOT VERIFIED rather than FAIL."
+    description: "Paths come from the frontend route files (operations, nurse-approval, reviewer-management, roles-permissions); unknown routes show as NOT VERIFIED rather than FAIL."
     status: draft
     risk: low
     writes: false
@@ -648,11 +648,13 @@ workflows:
     expected_outcome:
       - "No staff page is reachable anonymously"
     steps:
-      - {action: goto, path: "/operations", expected: "Anonymous /operations  # VERIFY path", optional: true}
+      - {action: goto, path: "/operations", expected: "Anonymous /operations", optional: true}
       - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: "Login form shown", optional: true}
-      - {action: goto, path: "/reviewer", expected: "Anonymous /reviewer  # VERIFY path", optional: true}
+      - {action: goto, path: "/nurse-approval", expected: "Anonymous /nurse-approval", optional: true}
       - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: "Login form shown", optional: true}
-      - {action: goto, path: "/admin", expected: "Anonymous /admin  # VERIFY path", optional: true}
+      - {action: goto, path: "/reviewer-management", expected: "Anonymous /reviewer-management", optional: true}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: "Login form shown", optional: true}
+      - {action: goto, path: "/roles-permissions", expected: "Anonymous /roles-permissions", optional: true}
       - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: "Login form shown", optional: true}
 
   - id: sec_04_customer_cannot_open_nurse_area
@@ -696,7 +698,7 @@ workflows:
   - id: sec_06_customer_cannot_open_staff_areas
     app: nurseconnect
     title: "Security: a consumer cannot open operations / reviewer / admin areas"
-    description: "Guessed paths; unknown routes show as NOT VERIFIED. Reaching the page with real content is a FAIL."
+    description: "Paths from the frontend route files. Reaching the page with real content is a FAIL; unknown routes show as NOT VERIFIED."
     status: draft
     risk: low
     writes: false
@@ -708,17 +710,19 @@ workflows:
     expected_outcome:
       - "Staff areas are not reachable"
     steps:
-      - {action: goto, path: "/operations", expected: "consumer opens /operations  # VERIFY path", optional: true}
+      - {action: goto, path: "/operations", expected: "consumer opens /operations", optional: true}
       - {action: expect_url, matches: "^(?!.*/operations(/|$)).*$", expected: "Not left on /operations", optional: true}
-      - {action: goto, path: "/reviewer", expected: "consumer opens /reviewer  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/reviewer(/|$)).*$", expected: "Not left on /reviewer", optional: true}
-      - {action: goto, path: "/admin", expected: "consumer opens /admin  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/admin(/|$)).*$", expected: "Not left on /admin", optional: true}
+      - {action: goto, path: "/nurse-approval", expected: "consumer opens /nurse-approval", optional: true}
+      - {action: expect_url, matches: "^(?!.*/nurse-approval(/|$)).*$", expected: "Not left on /nurse-approval", optional: true}
+      - {action: goto, path: "/reviewer-management", expected: "consumer opens /reviewer-management", optional: true}
+      - {action: expect_url, matches: "^(?!.*/reviewer-management(/|$)).*$", expected: "Not left on /reviewer-management", optional: true}
+      - {action: goto, path: "/roles-permissions", expected: "consumer opens /roles-permissions", optional: true}
+      - {action: expect_url, matches: "^(?!.*/roles-permissions(/|$)).*$", expected: "Not left on /roles-permissions", optional: true}
 
   - id: sec_07_nurse_cannot_open_staff_areas
     app: nurseconnect
     title: "Security: a nurse cannot open operations / reviewer / admin areas"
-    description: "Guessed paths; unknown routes show as NOT VERIFIED. Reaching the page with real content is a FAIL."
+    description: "Paths from the frontend route files. Reaching the page with real content is a FAIL; unknown routes show as NOT VERIFIED."
     status: draft
     risk: low
     writes: false
@@ -730,17 +734,19 @@ workflows:
     expected_outcome:
       - "Staff areas are not reachable"
     steps:
-      - {action: goto, path: "/operations", expected: "nurse opens /operations  # VERIFY path", optional: true}
+      - {action: goto, path: "/operations", expected: "nurse opens /operations", optional: true}
       - {action: expect_url, matches: "^(?!.*/operations(/|$)).*$", expected: "Not left on /operations", optional: true}
-      - {action: goto, path: "/reviewer", expected: "nurse opens /reviewer  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/reviewer(/|$)).*$", expected: "Not left on /reviewer", optional: true}
-      - {action: goto, path: "/admin", expected: "nurse opens /admin  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/admin(/|$)).*$", expected: "Not left on /admin", optional: true}
+      - {action: goto, path: "/nurse-approval", expected: "nurse opens /nurse-approval", optional: true}
+      - {action: expect_url, matches: "^(?!.*/nurse-approval(/|$)).*$", expected: "Not left on /nurse-approval", optional: true}
+      - {action: goto, path: "/reviewer-management", expected: "nurse opens /reviewer-management", optional: true}
+      - {action: expect_url, matches: "^(?!.*/reviewer-management(/|$)).*$", expected: "Not left on /reviewer-management", optional: true}
+      - {action: goto, path: "/roles-permissions", expected: "nurse opens /roles-permissions", optional: true}
+      - {action: expect_url, matches: "^(?!.*/roles-permissions(/|$)).*$", expected: "Not left on /roles-permissions", optional: true}
 
   - id: sec_08_reviewer_cannot_open_admin_area
     app: nurseconnect
     title: "Security: reviewer cannot open the admin area"
-    description: "Guessed path; see sec_03."
+    description: "Admin-only page assumed from the route name roles-permissions; confirm with the product owner."
     status: draft
     risk: low
     writes: false
@@ -752,13 +758,13 @@ workflows:
     expected_outcome:
       - "Admin area is admin-only"
     steps:
-      - {action: goto, path: "/admin", expected: "reviewer opens /admin  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/admin(/|$)).*$", expected: "Not left on /admin", optional: true}
+      - {action: goto, path: "/roles-permissions", expected: "reviewer opens /roles-permissions  # VERIFY: assumed admin-only page", optional: true}
+      - {action: expect_url, matches: "^(?!.*/roles-permissions(/|$)).*$", expected: "Not left on /roles-permissions", optional: true}
 
   - id: sec_09_operations_cannot_open_admin_area
     app: nurseconnect
     title: "Security: operations cannot open the admin area"
-    description: "Guessed path; see sec_03."
+    description: "Admin-only page assumed from the route name roles-permissions; confirm with the product owner."
     status: draft
     risk: low
     writes: false
@@ -770,8 +776,8 @@ workflows:
     expected_outcome:
       - "Admin area is admin-only"
     steps:
-      - {action: goto, path: "/admin", expected: "operations opens /admin  # VERIFY path", optional: true}
-      - {action: expect_url, matches: "^(?!.*/admin(/|$)).*$", expected: "Not left on /admin", optional: true}
+      - {action: goto, path: "/roles-permissions", expected: "operations opens /roles-permissions  # VERIFY: assumed admin-only page", optional: true}
+      - {action: expect_url, matches: "^(?!.*/roles-permissions(/|$)).*$", expected: "Not left on /roles-permissions", optional: true}
 
   - id: sec_10_login_sql_injection_strings
     app: nurseconnect

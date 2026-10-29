@@ -1,0 +1,26 @@
+version: 1
+workflows:
+- id: sec_01_anonymous_cannot_open_nurse_area
+  app: nurseconnect
+  title: 'Security: an anonymous visitor cannot open the nurse area'
+  description: Opens /partner without logging in; the login form must appear and no
+    data may load.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - No login performed
+  expected_outcome:
+  - Redirected to login
+  steps:
+  - action: goto
+    path: /partner
+    expected: Open /partner anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+  - action: expect_no_writes_sent
+    expected: Nothing was written
