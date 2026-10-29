@@ -21,18 +21,12 @@ environments:
       hospital:
         base_url: http://hospitaldashboard-env.eba-n7anfees.ap-south-1.elasticbeanstalk.com
 
-  # ---- TEMPLATE: copy, fill in YOUR staging origins, remove the leading '#' --------------------------------------
-  # staging:
-  #   kind: staging
-  #   allowed_origins:                      # exact scheme://host[:port]; no wildcards
-  #     - https://staging.example.org
-  #     - https://hospital-staging.example.org
-  #   apps:
-  #     nurseconnect: {base_url: https://staging.example.org}
-  #     hospital:     {base_url: https://hospital-staging.example.org}
-  #   # allow_insecure: true               # needed only if a staging origin is plain http (non-localhost)
-  #   # OPTIONAL but recommended: the server itself says which environment it is. If present it MUST match.
-  #   verify:
-  #     path: /api/health                  # GET <origin>/api/health
-  #     json_key: environment              # dotted path into the JSON response
-  #     equals: staging-nurseconnect       # exact value the staging deployment reports
+  staging:
+    kind: staging
+    allowed_origins:
+      - https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev
+      - https://see-resist-teams-integral.trycloudflare.com
+    auth_origins:
+      - https://see-resist-teams-integral.trycloudflare.com
+    apps:
+      nurseconnect: {base_url: https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev}
