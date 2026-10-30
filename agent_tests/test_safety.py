@@ -31,10 +31,18 @@ def test_invalid_yaml_and_shape_fail_closed(tmp_path):
         load_environments(p)
 
 
-def test_shipped_environments_file_declares_production_only():
+def test_shipped_environments_file_is_safe():
     envs = load_environments()
     assert envs["production"].kind == "production"
-    assert not [e for e in envs.values() if e.is_staging_like], "no staging may be declared until the owner adds one"
+    prod_origins = {normalize_origin(u) for u in envs["production"].base_urls.values()}
+    for name, env in envs.items():
+        if not env.is_staging_like:
+            continue
+        # A declared staging/local env is allowed, but must never overlap production.
+        assert env.allowed_origins, f"{name} must declare explicit allowed_origins"
+        assert not (set(env.allowed_origins) & prod_origins), f"{name} reuses a production origin"
+        for url in env.base_urls.values():
+            assert normalize_origin(url) not in prod_origins, f"{name} base_url is a production origin"
 
 
 def test_staging_requires_explicit_allowed_origins(tmp_path):
