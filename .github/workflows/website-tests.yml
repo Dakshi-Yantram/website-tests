@@ -2,9 +2,13 @@ name: Website tests (NurseConnect + Hospital)
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'patch*/newchanges'
+
   schedule:
-    - cron: "30 2 * * *"      # daily 08:00 IST (GitHub cron is UTC)
+    - cron: "30 2 * * *"
+
   workflow_dispatch:
     inputs:
       phase:
