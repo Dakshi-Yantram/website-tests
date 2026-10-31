@@ -31,9 +31,26 @@ def test_invalid_yaml_and_shape_fail_closed(tmp_path):
         load_environments(p)
 
 
+def test_shipped_environments_file_declares_production_and_safe_staging():
 def test_shipped_environments_file_is_safe():
     envs = load_environments()
+
+    # Production must always exist and remain read-only.
     assert envs["production"].kind == "production"
+
+    # Declared staging must have explicit allowlisted origins.
+    staging_envs = [e for e in envs.values() if e.is_staging_like]
+
+    assert staging_envs, "Expected explicitly configured staging environment"
+
+    for env in staging_envs:
+        assert env.allowed_origins, f"{env.name} must have allowed_origins"
+
+        for app, base_url in env.base_urls.items():
+            from qa_agent.safety import normalize_origin
+            assert normalize_origin(base_url) in env.allowed_origins, (
+                f"{env.name}: {app} base URL must be allowlisted"
+            )
     prod_origins = {normalize_origin(u) for u in envs["production"].base_urls.values()}
     for name, env in envs.items():
         if not env.is_staging_like:
