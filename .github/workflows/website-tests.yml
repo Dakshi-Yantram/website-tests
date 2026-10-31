@@ -18,8 +18,9 @@ on:
       - main
       - 'patch*/newchanges'
 
-    branches: [main]
   pull_request:
+    branches:
+      - main
   schedule:
     - cron: "30 2 * * *"
 
