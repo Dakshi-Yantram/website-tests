@@ -1,0 +1,55 @@
+version: 1
+workflows:
+- id: sec_03_anonymous_cannot_open_staff_areas
+  app: nurseconnect
+  title: 'Security: an anonymous visitor cannot open operations / reviewer / admin
+    areas'
+  description: Paths come from the frontend route files (operations, nurse-approval,
+    reviewer-management, roles-permissions); unknown routes show as NOT VERIFIED rather
+    than FAIL.
+  status: draft
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - No login performed
+  expected_outcome:
+  - No staff page is reachable anonymously
+  steps:
+  - action: goto
+    path: /operations
+    expected: Anonymous /operations
+    optional: true
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form shown
+    optional: true
+  - action: goto
+    path: /nurse-approval
+    expected: Anonymous /nurse-approval
+    optional: true
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form shown
+    optional: true
+  - action: goto
+    path: /reviewer-management
+    expected: Anonymous /reviewer-management
+    optional: true
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form shown
+    optional: true
+  - action: goto
+    path: /roles-permissions
+    expected: Anonymous /roles-permissions
+    optional: true
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form shown
+    optional: true
