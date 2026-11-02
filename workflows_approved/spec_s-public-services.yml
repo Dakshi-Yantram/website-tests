@@ -1,0 +1,36 @@
+version: 1
+workflows:
+- id: spec_s-public-services
+  app: nurseconnect
+  title: Confirm /services renders its source-defined 'Healthcare services' section
+  description: 'Source-anchored UI smoke only; does not verify full business process.
+    Source: src/routes/services.index.tsx'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  expected_outcome:
+  - Source-defined visible text 'Healthcare services' is present on /services
+  sources:
+  - file: frontend/src/routes/services.index.tsx
+  - file: spec:nurseconnect_ci_smoke.yaml#S-PUBLIC-SERVICES
+  steps:
+  - action: goto
+    path: /services
+    expected: GET /services responds
+  - action: expect_visible
+    target:
+      text: Healthcare services
+    expected: Source-defined 'Healthcare services' content renders
+    timeout_ms: 25000
+  - action: expect_no_writes_sent
+    expected: Read-only workflow sent no business write requests
+  generated:
+    method: source-anchored-read-only-smoke
+    original_id: S-PUBLIC-SERVICES
+    model: none
+    source_sha256: 6522c6bfb22793137be526fd0d478e7feb9542ee46ecb4ce4d20df86cf2d0761
+    compiled: false
+    requires_human_approval: true
