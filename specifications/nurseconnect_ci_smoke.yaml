@@ -1,0 +1,593 @@
+schema_version: nurseconnect.agent.workflow.v1
+application: nurseconnect
+workflows:
+- id: S-PUBLIC-PACKAGES
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /packages renders its source-defined 'Our Care Packages' section
+  write_test: false
+  source_anchors:
+  - /packages
+  source_files:
+  - frontend/src/routes/packages.index.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /packages and verify literal visible UI text 'Our Care Packages'
+  assertions:
+  - description: Source-defined visible text 'Our Care Packages' is present on /packages
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PUBLIC-SERVICES
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /services renders its source-defined 'Healthcare services' section
+  write_test: false
+  source_anchors:
+  - /services
+  source_files:
+  - frontend/src/routes/services.index.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /services and verify literal visible UI text 'Healthcare services'
+  assertions:
+  - description: Source-defined visible text 'Healthcare services' is present on /services
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-LOGIN
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /auth/login renders its source-defined 'Welcome Back' section
+  write_test: false
+  source_anchors:
+  - /auth/login
+  source_files:
+  - frontend/src/routes/auth.login.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /auth/login and verify literal visible UI text 'Welcome Back'
+  assertions:
+  - description: Source-defined visible text 'Welcome Back' is present on /auth/login
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-ASSIGNMENTS
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/assignments renders its source-defined 'New Requests' section
+  write_test: false
+  source_anchors:
+  - /partner/assignments
+  source_files:
+  - frontend/src/routes/_app.partner.assignments.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/assignments and verify literal visible UI text 'New Requests'
+  assertions:
+  - description: Source-defined visible text 'New Requests' is present on /partner/assignments
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-DOCUMENTS
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/documentation renders its source-defined 'My Documents' section
+  write_test: false
+  source_anchors:
+  - /partner/documentation
+  source_files:
+  - frontend/src/routes/_app.partner.documentation.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/documentation and verify literal visible UI text 'My Documents'
+  assertions:
+  - description: Source-defined visible text 'My Documents' is present on /partner/documentation
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-AVAILABILITY
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/availability renders its source-defined 'Availability' section
+  write_test: false
+  source_anchors:
+  - /partner/availability
+  source_files:
+  - frontend/src/routes/_app.partner.availability.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/availability and verify literal visible UI text 'Availability'
+  assertions:
+  - description: Source-defined visible text 'Availability' is present on /partner/availability
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-SERVICES
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/services renders its source-defined 'Care Packages I Can Provide' section
+  write_test: false
+  source_anchors:
+  - /partner/services
+  source_files:
+  - frontend/src/routes/_app.partner.services.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/services and verify literal visible UI text 'Care Packages I Can Provide'
+  assertions:
+  - description: Source-defined visible text 'Care Packages I Can Provide' is present on /partner/services
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-VISITS
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/visits renders its source-defined 'My Visits' section
+  write_test: false
+  source_anchors:
+  - /partner/visits
+  source_files:
+  - frontend/src/routes/_app.partner.visits.index.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/visits and verify literal visible UI text 'My Visits'
+  assertions:
+  - description: Source-defined visible text 'My Visits' is present on /partner/visits
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PARTNER-EARNINGS
+  module: source-anchored-smoke
+  role: nurse
+  priority: P1
+  objective: Confirm /partner/earnings renders its source-defined 'Earnings' section
+  write_test: false
+  source_anchors:
+  - /partner/earnings
+  source_files:
+  - frontend/src/routes/_app.partner.earnings.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - nurse credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /partner/earnings and verify literal visible UI text 'Earnings'
+  assertions:
+  - description: Source-defined visible text 'Earnings' is present on /partner/earnings
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-CONSUMER-PATIENTS
+  module: source-anchored-smoke
+  role: consumer
+  priority: P1
+  objective: Confirm /consumer/patients renders its source-defined 'My patients' section
+  write_test: false
+  source_anchors:
+  - /consumer/patients
+  source_files:
+  - frontend/src/routes/_app.consumer.patients.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - consumer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /consumer/patients and verify literal visible UI text 'My patients'
+  assertions:
+  - description: Source-defined visible text 'My patients' is present on /consumer/patients
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-CONSUMER-BOOKINGS
+  module: source-anchored-smoke
+  role: consumer
+  priority: P1
+  objective: Confirm /consumer/bookings renders its source-defined 'Care Packages' section
+  write_test: false
+  source_anchors:
+  - /consumer/bookings
+  source_files:
+  - frontend/src/routes/_app.consumer.bookings.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - consumer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /consumer/bookings and verify literal visible UI text 'Care Packages'
+  assertions:
+  - description: Source-defined visible text 'Care Packages' is present on /consumer/bookings
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-CONSUMER-ADDRESSES
+  module: source-anchored-smoke
+  role: consumer
+  priority: P1
+  objective: Confirm /consumer/addresses renders its source-defined 'Saved addresses' section
+  write_test: false
+  source_anchors:
+  - /consumer/addresses
+  source_files:
+  - frontend/src/routes/_app.consumer.addresses.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - consumer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /consumer/addresses and verify literal visible UI text 'Saved addresses'
+  assertions:
+  - description: Source-defined visible text 'Saved addresses' is present on /consumer/addresses
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-CONSUMER-PAYMENTS
+  module: source-anchored-smoke
+  role: consumer
+  priority: P1
+  objective: Confirm /consumer/payments renders its source-defined 'Recent charges' section
+  write_test: false
+  source_anchors:
+  - /consumer/payments
+  source_files:
+  - frontend/src/routes/_app.consumer.payments.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - consumer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /consumer/payments and verify literal visible UI text 'Recent charges'
+  assertions:
+  - description: Source-defined visible text 'Recent charges' is present on /consumer/payments
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-REVIEWER-ONBOARDING
+  module: source-anchored-smoke
+  role: reviewer
+  priority: P1
+  objective: Confirm /onboarding-review renders its source-defined 'Applications in Pipeline' section
+  write_test: false
+  source_anchors:
+  - /onboarding-review
+  source_files:
+  - frontend/src/routes/_app.onboarding-review.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - reviewer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /onboarding-review and verify literal visible UI text 'Applications in Pipeline'
+  assertions:
+  - description: Source-defined visible text 'Applications in Pipeline' is present on /onboarding-review
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-REVIEWER-NURSE
+  module: source-anchored-smoke
+  role: reviewer
+  priority: P1
+  objective: Confirm /nurse-approval renders its source-defined 'My Review Queue' section
+  write_test: false
+  source_anchors:
+  - /nurse-approval
+  source_files:
+  - frontend/src/routes/_app.nurse-approval.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - reviewer credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /nurse-approval and verify literal visible UI text 'My Review Queue'
+  assertions:
+  - description: Source-defined visible text 'My Review Queue' is present on /nurse-approval
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-OPERATIONS-STAFF
+  module: source-anchored-smoke
+  role: operations
+  priority: P1
+  objective: Confirm /operations/staff renders its source-defined 'Staff Accounts' section
+  write_test: false
+  source_anchors:
+  - /operations/staff
+  source_files:
+  - frontend/src/routes/_app.operations.staff.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - operations credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /operations/staff and verify literal visible UI text 'Staff Accounts'
+  assertions:
+  - description: Source-defined visible text 'Staff Accounts' is present on /operations/staff
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-OPERATIONS-FAQ
+  module: source-anchored-smoke
+  role: operations
+  priority: P1
+  objective: Confirm /operations/faq renders its source-defined 'FAQ Management' section
+  write_test: false
+  source_anchors:
+  - /operations/faq
+  source_files:
+  - frontend/src/routes/_app.operations.faq.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - operations credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /operations/faq and verify literal visible UI text 'FAQ Management'
+  assertions:
+  - description: Source-defined visible text 'FAQ Management' is present on /operations/faq
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-DASHBOARD
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /dashboard renders its source-defined 'Booking Trends (7 days)' section
+  write_test: false
+  source_anchors:
+  - /dashboard
+  source_files:
+  - frontend/src/routes/_app.dashboard.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /dashboard and verify literal visible UI text 'Booking Trends (7 days)'
+  assertions:
+  - description: Source-defined visible text 'Booking Trends (7 days)' is present on /dashboard
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-PACKAGES
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /care-packages renders its source-defined 'Care Packages' section
+  write_test: false
+  source_anchors:
+  - /care-packages
+  source_files:
+  - frontend/src/routes/_app.care-packages.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /care-packages and verify literal visible UI text 'Care Packages'
+  assertions:
+  - description: Source-defined visible text 'Care Packages' is present on /care-packages
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-SERVICES
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /services-catalogue renders its source-defined 'Service Catalogue' section
+  write_test: false
+  source_anchors:
+  - /services-catalogue
+  source_files:
+  - frontend/src/routes/_app.services-catalogue.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /services-catalogue and verify literal visible UI text 'Service Catalogue'
+  assertions:
+  - description: Source-defined visible text 'Service Catalogue' is present on /services-catalogue
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-INCIDENTS
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /incidents renders its source-defined 'Incidents' section
+  write_test: false
+  source_anchors:
+  - /incidents
+  source_files:
+  - frontend/src/routes/_app.incidents.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /incidents and verify literal visible UI text 'Incidents'
+  assertions:
+  - description: Source-defined visible text 'Incidents' is present on /incidents
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-AUDIT
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /audit-logs renders its source-defined 'Immutable Audit Trail' section
+  write_test: false
+  source_anchors:
+  - /audit-logs
+  source_files:
+  - frontend/src/routes/_app.audit-logs.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /audit-logs and verify literal visible UI text 'Immutable Audit Trail'
+  assertions:
+  - description: Source-defined visible text 'Immutable Audit Trail' is present on /audit-logs
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-INSURANCE
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /insurance-review renders its source-defined 'Insurance Coverage Assessments' section
+  write_test: false
+  source_anchors:
+  - /insurance-review
+  source_files:
+  - frontend/src/routes/_app.insurance-review.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /insurance-review and verify literal visible UI text 'Insurance Coverage Assessments'
+  assertions:
+  - description: Source-defined visible text 'Insurance Coverage Assessments' is present on /insurance-review
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-PAYOUT
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /payout-approvals renders its source-defined 'Payout Approvals' section
+  write_test: false
+  source_anchors:
+  - /payout-approvals
+  source_files:
+  - frontend/src/routes/_app.payout-approvals.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /payout-approvals and verify literal visible UI text 'Payout Approvals'
+  assertions:
+  - description: Source-defined visible text 'Payout Approvals' is present on /payout-approvals
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-AGREEMENTS
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /provider-agreements renders its source-defined 'Provider Agreements' section
+  write_test: false
+  source_anchors:
+  - /provider-agreements
+  source_files:
+  - frontend/src/routes/_app.provider-agreements.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /provider-agreements and verify literal visible UI text 'Provider Agreements'
+  assertions:
+  - description: Source-defined visible text 'Provider Agreements' is present on /provider-agreements
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-ADMIN-CLINICAL
+  module: source-anchored-smoke
+  role: admin
+  priority: P1
+  objective: Confirm /clinical-escalation renders its source-defined 'Active Clinical Cases' section
+  write_test: false
+  source_anchors:
+  - /clinical-escalation
+  source_files:
+  - frontend/src/routes/_app.clinical-escalation.tsx
+  preconditions:
+  - Use a synthetic staging role account
+  - No record changes, messaging, checkout or payments
+  - admin credentials configured in GitHub Actions
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /clinical-escalation and verify literal visible UI text 'Active Clinical Cases'
+  assertions:
+  - description: Source-defined visible text 'Active Clinical Cases' is present on /clinical-escalation
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-LOGIN-INPUTS
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P0
+  objective: Login page contains an email field, password field, and Login button
+  write_test: false
+  source_anchors:
+  - /auth/login
+  source_files:
+  - frontend/src/routes/auth.login.tsx
+  preconditions:
+  - Public login page reachable
+  - No credential submission
+  steps:
+  - action: navigate_or_call
+    description: Open login page and inspect user-visible sign-in controls without submitting
+  assertions:
+  - description: Email and password fields are visible
+  - description: Login button is visible
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
