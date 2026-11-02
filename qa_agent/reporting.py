@@ -2,12 +2,15 @@
 if anything sensitive-looking survives, NOTHING is written (fail closed)."""
 import html
 import json
+import shutil
 from dataclasses import asdict
 from pathlib import Path
 
 import yaml
 
 from .errors import SensitiveDataError
+from .diagnostics import generate_findings, enrich_with_ai
+from .artifacts import safe_name
 from .redaction import assert_clean, assert_clean_obj, redact, redact_obj
 from .workflows import DRAFTS_DIR
 
@@ -59,6 +62,16 @@ def _e(x):
     return html.escape(str(x if x is not None else ""))
 
 
+def _screenshot_markup(step):
+    link = step.get("screenshot_link", "")
+    if not link:
+        return ""
+    safe = _e(link)
+    return (f'<br><a href="{safe}" target="_blank" rel="noopener">View failure screenshot</a>'
+            f'<br><a href="{safe}"><img loading="lazy" class="shot" src="{safe}" '
+            f'alt="Masked failure screenshot"></a>')
+
+
 def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | None = None) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -67,6 +80,32 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
     data = redact_obj({"meta": meta, "summary": summarize(results), "workflows": [asdict(r) for r in results],
                        "inventory": inventory or [],
                        "skipped": [{"id": r.id, "status": r.status, "reason": r.reason} for r in results if r.status in ("NOT TESTED", "BLOCKED")]})
+    data["findings"] = enrich_with_ai(generate_findings(data["workflows"]),
+                                           env_kind=str(meta.get("environment_kind", "")))
+    # A report directory is independently downloadable: it contains its own masked screenshot copies.
+    # Never copy arbitrary paths: only screenshot files recorded by the runner under /screenshots/.
+    # The PNG files are generated through the masking policy; CI never publishes unmasked captures.
+    screenshot_sources = {}
+    for w in data["workflows"]:
+        for st in w["steps"]:
+            src = st.get("screenshot", "")
+            if not src:
+                continue
+            path = Path(src)
+            if (path.suffix.lower() != ".png" or path.parent.name != "screenshots" or
+                path.name != safe_name(path.stem, limit=255) + ".png" or not path.is_file() or
+                path.stat().st_size > 8_000_000 or
+                path.open('rb').read(8) != b"\x89PNG\r\n\x1a\n"):
+                st["screenshot_note"] = "Screenshot file missing or rejected for safety"
+                st["screenshot"] = ""
+                continue
+            rel = "screenshots/" + path.name
+            st["screenshot_link"] = rel
+            screenshot_sources[rel] = path
+    for finding in data["findings"]:
+        file = finding.get("screenshot", "")
+        if file and "screenshots/" + Path(file).name in screenshot_sources:
+            finding["screenshot_link"] = "screenshots/" + Path(file).name
     try:
         assert_clean_obj(data, what="test report")
     except SensitiveDataError:
@@ -89,6 +128,15 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
     fails = [(w, st) for w in data["workflows"] for st in w["steps"] if st["status"] == "FAIL"]
     md += ["", "## Failures", ""]
     md += [f"- `{w['id']}` step {st['n']} ({st['action']}) at {st['timestamp']} - expected: {st['expected']}; error: {st['error']}" for w, st in fails] or ["None."]
+    md += ["", "## Investigate these issues (hypotheses, not verified root causes)", ""]
+    for f in data["findings"]:
+        evidence = (f"; [view screenshot]({f['screenshot_link']})" if f.get("screenshot_link") else "")
+        md += [f"- **{f['id']}** ({f['status']}, {f['severity']}; {f['count']} occurrence(s)): "
+               f"{f['type']} - {f['summary']}. Next: {f['investigate']}{evidence}"]
+        if f.get('ai_hypothesis_unverified'):
+            md.append(f"  - Optional AI hypothesis (NOT VERIFIED): {f['ai_hypothesis_unverified']}")
+    if not data["findings"]:
+        md.append("None.")
     md += ["", "## Skipped / not run, with reasons", ""]
     md += [f"- `{x['id']}` - **{x['status']}** - {x['reason']}" for x in data["skipped"]] or ["None."]
     if inventory:
@@ -108,17 +156,33 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
             rows.append(f'<tr class="step"><td colspan="2">&nbsp;&nbsp;#{st["n"]} {_e(st["action"])} <small>{_e(st["timestamp"])}</small></td>'
                         f'<td style="color:{COLORS.get(st["status"], "#000")}">{_e(st["status"])}</td><td colspan="4">{_e(st["expected"])} &rarr; {_e(st["actual"])}'
                         f'{"<br><b>" + _e(st["error"]) + "</b>" if st["error"] else ""}{det}'
-                        f'{"<br>screenshot: " + _e(Path(st["screenshot"]).name) if st["screenshot"] else ""}</td></tr>')
+                        f'{_screenshot_markup(st)}'
+                        f'{"<br>" + _e(st.get("screenshot_note")) if st.get("screenshot_note") else ""}</td></tr>')
+    finding_rows = []
+    for f in data["findings"]:
+        link = (f'<a href="{_e(f["screenshot_link"])}" target="_blank" rel="noopener">View masked screenshot</a>'
+                if f.get("screenshot_link") else 'No screenshot (preflight or capture unavailable)')
+        affected = ', '.join(_e(item['workflow']) + ' step ' + str(item['step']) for item in f['occurrences'][:12])
+        extra = (f'<p><b>Optional AI hypothesis (unverified):</b> {_e(f["ai_hypothesis_unverified"])}</p>'
+                 if f.get('ai_hypothesis_unverified') else '')
+        finding_rows.append(f'<section class="finding"><h3>{_e(f["id"])} — {_e(f["type"])} '
+                            f'<small>{_e(f["status"])} / {_e(f["severity"])} / {f["count"]} occurrence(s)</small></h3>'
+                            f'<p><b>Observed:</b> {_e(f["summary"])}</p>'
+                            f'<p><b>Expected:</b> {_e(f["expected"])}</p>'
+                            f'<p><b>Investigation suggestion, not a verified cause:</b> {_e(f["investigate"])}</p>'
+                            f'<p><b>Affected:</b> {affected}</p><p>{link}</p>{extra}</section>')
     inv_rows = "".join(f'<tr><td>{_e(r["id"])}</td><td>{_e(r["app"])}</td><td>{_e(r["approval"])}</td><td>{_e(r["last_result"])}</td><td>{_e(r["risk"])}</td>'
                        f'<td>{_e(r["writes"])}</td><td>{_e(r["source"])}</td><td>{_e(r["reason_not_run"])}</td></tr>' for r in data["inventory"])
     doc = (f'<!doctype html><html><head><meta charset="utf-8"><title>Test run {_e(run_id)}</title><style>'
            'body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2328}.cards{display:flex;gap:12px;margin:16px 0}'
            '.card{background:#f6f8fa;padding:12px 20px;border-radius:6px;text-align:center}.n{font-size:28px;font-weight:700}'
            'table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:32px}td,th{border:1px solid #d0d7de;padding:6px;vertical-align:top;word-break:break-word}'
-           'th{background:#f6f8fa;text-align:left}.step td{background:#fcfcfd;font-size:12px}</style></head><body>'
+           'th{background:#f6f8fa;text-align:left}.step td{background:#fcfcfd;font-size:12px}'
+           '.shot{display:block;max-width:460px;max-height:260px;border:1px solid #d0d7de;margin-top:8px}'
+           '.finding{border:1px solid #d0d7de;border-radius:6px;padding:10px 15px;margin:12px 0}.finding h3{margin:4px 0}</style></head><body>'
            f'<h1>Test run {_e(run_id)}</h1><p>Environment <b>{_e(m["environment"])}</b> ({_e(m["environment_kind"])}) &middot; mode <b>{_e(m["mode"])}</b> &middot; '
            f'{_e(m["started"])} &rarr; {_e(m.get("finished", ""))}<br>Browser {_e(m["browser_version"])} &middot; Python {_e(m["python"])} &middot; {_e(m["platform"])}</p>'
-           f'<div class="cards">{cards}</div><h2>Workflows</h2><table><tr><th>Workflow</th><th>App</th><th>Result</th><th>Approval</th><th>Risk</th><th>Writes</th><th>Reason</th></tr>{"".join(rows)}</table>'
+           f'<div class="cards">{cards}</div><h2>Issues requiring investigation</h2>{"".join(finding_rows) or "<p>None.</p>"}<h2>Workflows</h2><table><tr><th>Workflow</th><th>App</th><th>Result</th><th>Approval</th><th>Risk</th><th>Writes</th><th>Reason</th></tr>{"".join(rows)}</table>'
            f'<h2>Workflow inventory</h2><table><tr><th>Id</th><th>App</th><th>Approval</th><th>Last result</th><th>Risk</th><th>Writes</th><th>Source</th><th>Not run because</th></tr>{inv_rows}</table>'
            '<p><small>PASS = assertions ran and held. FAIL = an assertion failed or an error occurred. BLOCKED = a safety/approval/credential gate refused the run or a feature was not found. '
            'NOT VERIFIED = ran but the result is not trustworthy. NOT TESTED = intentionally not executed (dry-run, read-only mode, draft, earlier failure).</small></p></body></html>')
@@ -128,6 +192,23 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
     paths["json"].write_text(jtxt, encoding="utf-8")
     paths["md"].write_text(md_text, encoding="utf-8")
     paths["html"].write_text(doc, encoding="utf-8")
+    copied = []
+    for rel, src in screenshot_sources.items():
+        destination = out_dir / rel
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        # Ignore non-PNG or unexpectedly large files to limit accidental artifact disclosure.
+        if src.is_file() and src.stat().st_size <= 8_000_000 and src.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n":
+            shutil.copyfile(src, destination)
+            copied.append(rel)
+    # Safe timeline: metadata only (no Playwright DOM snapshot or network-response bodies).
+    timeline = redact_obj({"run_id": run_id, "workflows": [
+        {"id": w['id'], "status": w['status'], "steps": [
+            {k: st.get(k) for k in ('n', 'action', 'status', 'duration_s', 'timestamp', 'url', 'screenshot_link')}
+            for st in w['steps']]} for w in data['workflows']]})
+    assert_clean_obj(timeline, what='safe trace timeline')
+    timeline_path = out_dir / f"agent_timeline_{run_id}.json"
+    timeline_path.write_text(json.dumps(timeline, ensure_ascii=False, indent=2), encoding='utf-8')
+    paths['timeline_json'] = timeline_path
     if inventory:
         inv_md = ["# Workflow inventory", "", "| Workflow | App | Approval state | Last result | Risk | Writes | Source | Not run because |", "|---|---|---|---|---|---|---|---|"]
         inv_md += [f"| `{r['id']}` | {r['app']} | {r['approval']} | {r['last_result']} | {r['risk']} | {r['writes']} | {r['source']} | {(r['reason_not_run'] or '').replace('|', '/')} |" for r in data["inventory"]]
