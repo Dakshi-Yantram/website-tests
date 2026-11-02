@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-002
+  app: hospital
+  title: Error contract / UI messaging
+  description: 'Auto-compiled from shared.yaml / SHR-002. Business assertions: Correct
+    error shapes preserved with no sensitive data'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct error shapes preserved with no sensitive data
+  sources:
+  - file: spec:shared.yaml#SHR-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-002
+    model: deterministic-fallback
+    source_sha256: 18df665e09313a3edeb84ea5a4a68983bb71a2ab9d585ddcb028aa5e4f235079
+    compiled: false
+    requires_human_approval: true
+  role: doctor

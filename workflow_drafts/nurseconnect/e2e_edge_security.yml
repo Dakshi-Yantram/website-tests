@@ -793,8 +793,8 @@ workflows:
       - "Login refused cleanly"
     steps:
       - {action: goto, path: "/auth/login", expected: "Open login  # VERIFY path (NURSECONNECT_LOGIN_PATH)"}
-      - {action: fill, target: {css: 'input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email" i], input[name*="user" i], input[type="text"]'}, value: "admin' OR '1'='1' --", expected: "Injection string in email"}
-      - {action: fill, target: {css: 'input[type="password"]'}, value: "' OR '1'='1", expected: "Injection string in password"}
+      - {action: fill, target: {css: 'input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email" i], input[name*="user" i], input[type="text"]'}, value_env: QA_INJECTION_EMAIL, expected: "Injection string in email"}
+      - {action: fill, target: {css: 'input[type="password"]'}, value_env: QA_INJECTION_PASSWORD, expected: "Injection string in password"}
       - {action: login_submit, target: {role: button, name: Login}, expected: "Submit"}
       - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: "Still on the login form (not authenticated)"}
       - {action: expect_hidden, target: {text: "syntax error"}, expected: "No SQL error text"}

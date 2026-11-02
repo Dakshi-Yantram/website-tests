@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_fin-002
+  app: hospital
+  title: Billing calculations
+  description: 'Auto-compiled from finance.yaml / FIN-002. Business assertions: Invoice
+    line totals/tax/discount accurately computed'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Invoice line totals/tax/discount accurately computed
+  sources:
+  - file: spec:finance.yaml#FIN-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: FIN-002
+    model: deterministic-fallback
+    source_sha256: 8e063af01bef48f94d2cd0453eec889092b6391dc8afd6920ee08f740fa7df10
+    compiled: false
+    requires_human_approval: true
+  role: finance

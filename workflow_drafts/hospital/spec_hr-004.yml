@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_hr-004
+  app: hospital
+  title: Recruitment stages
+  description: 'Auto-compiled from hr.yaml / HR-004. Business assertions: Allowed
+    state transitions only'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Allowed state transitions only
+  sources:
+  - file: spec:hr.yaml#HR-004
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: HR-004
+    model: deterministic-fallback
+    source_sha256: 21a7307dcdc59f9203732f52f2a6a0d45296b51f5ec0d76a5aff84d4e15e211b
+    compiled: false
+    requires_human_approval: true
+  role: hr

@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-003
+  app: hospital
+  title: Timeout policies
+  description: 'Auto-compiled from shared.yaml / SHR-003. Business assertions: Timeout
+    threshold and abort behavior match API expectations'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Timeout threshold and abort behavior match API expectations
+  sources:
+  - file: spec:shared.yaml#SHR-003
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-003
+    model: deterministic-fallback
+    source_sha256: 42e21e48d8540d92f966aabc7b8780bf5b9cea67a6d51478afd07af31417769f
+    compiled: false
+    requires_human_approval: true
+  role: doctor

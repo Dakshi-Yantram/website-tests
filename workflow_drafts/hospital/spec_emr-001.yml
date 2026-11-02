@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_emr-001
+  app: hospital
+  title: Emergency acuity lanes
+  description: 'Auto-compiled from emergency.yaml / EMR-001. Business assertions:
+    Correct lane assignment; no duplicate encounter'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct lane assignment
+  - no duplicate encounter
+  sources:
+  - file: spec:emergency.yaml#EMR-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/emergency-red
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: EMR-001
+    model: deterministic-fallback
+    source_sha256: 182ff0713fc40d9e3fa96363e02b709c34669a451b14479305b5919192e36038
+    compiled: false
+    requires_human_approval: true
+  role: doctor

@@ -1,3 +1,7 @@
+> **Both apps:** Use [docs/MULTI_APP_COMPILER_HANDOFF.md](docs/MULTI_APP_COMPILER_HANDOFF.md) for app-aware Nurse Connect/HIMS YAML compilation and updated-spec handling. Browser Playwright cannot run native Android/iOS tests.
+
+> **New HIMS auto-compiler:** Read [docs/HIMS_AUTOMATIC_COMPILER.md](docs/HIMS_AUTOMATIC_COMPILER.md) for the new `compile-spec`, `approve-batch` and `run --spec` workflow. The supplied HIMS semantic pack is in `specifications/`. New clinical write tests still require reviewer approval and a verified synthetic staging deployment.
+
 # NurseConnect QA Testing Agent (Python + Playwright + Pytest + YAML workflows)
 
 Tests **NurseConnect** (nurse, consumer) and **Hospital Dashboard** (reception, doctor). It is your own code - no AI model is

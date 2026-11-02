@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_ot-005
+  app: hospital
+  title: OT safety hard stops and completion
+  description: 'Auto-compiled from ot.yaml / OT-005. Business assertions: Invalid
+    completion blocked; signed checkpoints auditable'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Invalid completion blocked
+  - signed checkpoints auditable
+  sources:
+  - file: spec:ot.yaml#OT-005
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: OT-005
+    model: deterministic-fallback
+    source_sha256: ed66f19783a674ec199f9954ed50ef097ca0192dc2b005b37053393e174ae516
+    compiled: false
+    requires_human_approval: true
+  role: doctor

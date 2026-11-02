@@ -42,6 +42,7 @@ class StepResult:
     console_errors: list = field(default_factory=list)
     failed_requests: list = field(default_factory=list)
     timestamp: str = ""
+    screenshot_note: str = ""
 
 
 @dataclass
@@ -145,6 +146,8 @@ def _roll_up(steps) -> str:
             return s
     if sts and all(s == "NOT TESTED" for s in sts):
         return "NOT TESTED"
+    if "NOT TESTED" in sts:
+        return "NOT TESTED"  # A partially executed workflow must never be reported as PASS.
     return "PASS" if sts else "NOT TESTED"
 
 
@@ -163,6 +166,10 @@ class Runner:
                      "python": platform.python_version(), "platform": platform.platform(),
                      "browser": cfg.browser, "browser_version": "(not launched)"}
         self.shot_mode = cfg.screenshot_mode or screenshot_mode(cfg.env.kind if cfg.env else None)
+        if not cfg.env or cfg.env.kind not in ("staging", "local"):
+            self.shot_mode = "off"     # Unknown/production environment: no clinical screenshots.
+        elif self.shot_mode == "full" and os.getenv("CI", "").lower() in ("true", "1"):
+            self.shot_mode = "masked"  # CI never uploads unmasked screenshots.
 
     # ---- gates ---------------------------------------------------------------------------------
     def _base_url(self, app: str) -> str:
@@ -218,7 +225,17 @@ class Runner:
             else:
                 runnable.append((wf, base))
         if runnable:
-            results.extend(self._run_browser(runnable))
+            try:
+                results.extend(self._run_browser(runnable))
+            except Exception as e:
+                # Browser binary missing, renderer crash, etc. must still yield an actionable report.
+                cause = redact(f"{type(e).__name__}: {(str(e).splitlines() or [''])[0][:200]}")
+                for wf, res in runnable:
+                    res.status = "BLOCKED"
+                    res.reason = "Browser execution could not start or finish: " + cause
+                    res.started = res.started or _now()
+                    res.finished = _now()
+                    results.append(res)
         self.meta["finished"] = _now()
         order = {w["id"]: i for i, w in enumerate(workflows)}
         results.sort(key=lambda r: order.get(r.id, 0))
@@ -228,7 +245,10 @@ class Runner:
         from playwright.sync_api import sync_playwright
         out = []
         with sync_playwright() as p:
-            browser = getattr(p, self.cfg.browser).launch(headless=self.cfg.headless, slow_mo=self.cfg.slow_mo)
+            launch_args = {"headless": self.cfg.headless, "slow_mo": self.cfg.slow_mo}
+            if self.cfg.browser == "chromium" and os.getenv("QA_CHROMIUM_PATH"):
+                launch_args["executable_path"] = os.environ["QA_CHROMIUM_PATH"]
+            browser = getattr(p, self.cfg.browser).launch(**launch_args)
             self.meta["browser_version"] = f"{self.cfg.browser} {browser.version}"
             try:
                 for wf, res in runnable:
@@ -244,6 +264,11 @@ class Runner:
                             self._run_one(browser, wf, res)
                     except StepBlocked as e:
                         res.status, res.reason = "BLOCKED", redact(str(e))
+                    except Exception as e:
+                        res.status = "FAIL"
+                        res.reason = redact(f"Unexpected workflow error: {type(e).__name__}: {(str(e).splitlines() or [''])[0][:200]}")
+                    res.started = res.started or _now()
+                    res.finished = res.finished or _now()
                     out.append(res)
             finally:
                 browser.close()
@@ -290,6 +315,10 @@ class Runner:
                     if bits:
                         sr.error = redact(f"{sr.error} | network: " + " ; ".join(bits))
                 sr.duration_s, sr.url = round(time.time() - t0, 2), redact(page.url)
+                sr.console_errors = [redact(x) for x in mon.console[:8]]
+                sr.failed_requests = [redact(x) for x in mon.failed[:8]]
+                if sr.status != "PASS":
+                    self._capture_failure(page, wf, sr, 0)
                 sr.actual = sr.actual or sr.error
                 if sr.status != "PASS":
                     sr.severity = "High" if sr.status == "FAIL" else ""
@@ -340,9 +369,8 @@ class Runner:
                         sr.severity = st.get("severity", "Medium")
                     sr.console_errors = [redact(x) for x in mon.console[c0:][:8]]
                     sr.failed_requests = [redact(x) for x in mon.failed[f0:][:8]]
-                    if sr.status in ("FAIL", "NOT VERIFIED") and self.shot_mode != "off":
-                        shot = Path(cfg.artifacts_dir) / "screenshots" / f"{self.run_id}_{safe_name(wf['id'])}_{n:02d}_{sr.status.replace(' ', '')}.png"
-                        sr.screenshot = safe_screenshot(page, shot, self.shot_mode)
+                    if sr.status in ("FAIL", "NOT VERIFIED", "BLOCKED"):
+                        self._capture_failure(page, wf, sr, n)
                     sr.actual, sr.error, sr.url = redact(sr.actual), redact(sr.error), redact(sr.url)
                     results.append(sr)
                     if sr.status == "FAIL":
@@ -368,6 +396,17 @@ class Runner:
         if bad:
             res.reason = redact(f"step {bad.n} ({bad.action}): {bad.error}")
         res.finished = _now()
+
+    def _capture_failure(self, page, wf, step, n):
+        """Best-effort evidence for a browser-step or login failure, never for pre-browser gates."""
+        if self.shot_mode == "off":
+            step.screenshot_note = "Screenshots disabled by policy"
+            return
+        path = (Path(self.cfg.artifacts_dir) / "screenshots" /
+                f"{safe_name(self.run_id)}_{safe_name(wf['id'])}_{n:02d}_{step.status.replace(' ', '')}.png")
+        step.screenshot = safe_screenshot(page, path, self.shot_mode)
+        if not step.screenshot:
+            step.screenshot_note = "Screenshot unavailable (browser or privacy-masking capture failed)"
 
     # ---- actions -------------------------------------------------------------------------------
     @staticmethod
@@ -444,6 +483,14 @@ class Runner:
             # role created in the same run (e.g. text: "{{SYNTH_NAME}}"). Only the fixed template variables expand.
             st = dict(st, target={k: (expand(v, values) if k in ("name", "label", "text", "placeholder") and isinstance(v, str) else v)
                                   for k, v in st["target"].items()})
+        if a == "require_verified":
+            raise StepNotVerified(st["reason"])
+        if a == "reload":
+            resp = page.reload(wait_until="domcontentloaded", timeout=timeout)
+            self._settle(page)
+            if resp and resp.status >= 400:
+                raise AssertionError(f"Reload returned HTTP {resp.status}")
+            return "Page reloaded for persistence verification"
         if a == "goto":
             url = origin + expand(st["path"], values)
             if normalize_origin(url) != origin:

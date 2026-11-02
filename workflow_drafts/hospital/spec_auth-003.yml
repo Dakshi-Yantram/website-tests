@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_auth-003
+  app: hospital
+  title: Module authorization and server enforcement
+  description: 'Auto-compiled from auth.yaml / AUTH-003. Business assertions: Unauthorized
+    access blocked in UI and API; authorized module works'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Unauthorized access blocked in UI and API
+  - authorized module works
+  sources:
+  - file: spec:auth.yaml#AUTH-003
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: AUTH-003
+    model: deterministic-fallback
+    source_sha256: 5975f25f9ce9a378343a246a5fe52c5a14b4fb4585482f53f1289406e4bc62da
+    compiled: false
+    requires_human_approval: true
+  role: reception

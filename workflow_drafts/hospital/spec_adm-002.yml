@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_adm-002
+  app: hospital
+  title: Superadmin hospital setup
+  description: 'Auto-compiled from admin.yaml / ADM-002. Business assertions: Hospital
+    isolation and subscription enforcement'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Hospital isolation and subscription enforcement
+  sources:
+  - file: spec:admin.yaml#ADM-002
+  steps:
+  - action: goto
+    path: /sadmin
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: ADM-002
+    model: deterministic-fallback
+    source_sha256: d055d5746fc1d077a5f2b2b9dedaa4b65b57a86d168b1c59e7d920cf4917da46
+    compiled: false
+    requires_human_approval: true
+  role: super_admin

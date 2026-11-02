@@ -9,19 +9,23 @@ folder as sensitive anyway; CI uploads screenshots only when SCREENSHOT_MODE is 
 """
 import os
 import re
+import threading
 from pathlib import Path
 
 MASK_SELECTORS = ("input", "textarea", "select", "table", "[role=grid]", "[role=table]", "[role=row]", "[role=cell]",
                   ".MuiDataGrid-root", ".MuiTableContainer-root", "img", "canvas", "video", "[data-private]", "[contenteditable=true]")
 MODES = ("off", "masked", "full")
+_direct = threading.local()   # set while safe_screenshot() runs: it already applied the mode decided by the runner
 
 
 def screenshot_mode(env_kind: str | None = None) -> str:
+    if env_kind not in ("staging", "local"):
+        return "off"  # Real/unknown patient data must never enter screenshot artifacts.
     m = os.getenv("SCREENSHOT_MODE", "masked").strip().lower()
     if m not in MODES:
         return "masked"
-    if m == "full" and env_kind not in ("staging", "local"):
-        return "masked"            # unmasked only where data is synthetic
+    if m == "full" and (env_kind not in ("staging", "local") or os.getenv("CI", "").lower() in ("1", "true")):
+        return "masked"            # no unmasked capture in CI or non-synthetic environments
     return m
 
 
@@ -39,8 +43,13 @@ def safe_screenshot(page, path, mode: str = "masked", full_page: bool = False) -
         if mode != "full":
             kwargs["mask"] = [page.locator(sel) for sel in MASK_SELECTORS]
             kwargs["mask_color"] = "#444444"
-        page.screenshot(**kwargs)
-        return str(path)
+        _direct.active = True
+        try:
+            page.screenshot(**kwargs)
+        finally:
+            _direct.active = False
+        # Report success only if a real file exists (the process-wide guard may have suppressed the capture).
+        return str(path) if Path(path).is_file() else ""
     except Exception:
         return ""
 
@@ -64,6 +73,8 @@ def install_screenshot_guard() -> None:
     original = Page.screenshot
 
     def guarded(self, *args, **kwargs):
+        if getattr(_direct, "active", False):
+            return original(self, *args, **kwargs)   # safe_screenshot() already chose and applied the mode
         mode = screenshot_mode(_active_env_kind())
         if mode == "off":
             return b""

@@ -158,7 +158,11 @@ def promote_draft(draft_path, *, store: ApprovalStore, by: str, reason: str, con
     doc = load_yaml_file(draft_path)
     wfs = doc.get("workflows") if isinstance(doc, dict) else None
     is_generated = isinstance(wfs, list) and bool(wfs) and all(isinstance(w, dict) and w.get("generated") for w in wfs)
-    probs = _vd(doc, draft_rules=is_generated, source=str(draft_path))
+    # Compiled specifications may contain staging writes. They still require explicit human
+    # approval with --i-understand-this-writes plus the runner's independent write gates.
+    # The older discovery-only generator retains its strict read-only draft rules.
+    from_compiler = is_generated and all(w.get("generated", {}).get("method") == "hims-spec-compiler" for w in wfs)
+    probs = _vd(doc, draft_rules=(is_generated and not from_compiler), source=str(draft_path))
     if probs:
         raise SchemaError(probs)
     approved_dir = Path(approved_dir)

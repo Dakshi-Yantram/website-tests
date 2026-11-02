@@ -30,7 +30,7 @@ _EMAIL = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za
 _PHONE = re.compile(r"(?<![\w.])(?:\+?91[\s-]?)?[6-9]\d{9}(?!\w)")
 _AADHAAR = re.compile(r"(?<!\d)\d{4}[\s-]\d{4}[\s-]\d{4}(?!\d)")
 _PAN = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]\b")
-_PATIENT_ID = re.compile(r"(?i)\b(uhid|mrn|patient[\s_-]?id|ip[\s_-]?no|op[\s_-]?no|reg(?:istration)?[\s_-]?(?:no|number))\b(\s*[:#=-]?\s*)([A-Z0-9][A-Z0-9/-]{3,})")
+_PATIENT_ID = re.compile(r"(?i)\b(uhid|mrn|patient[\s_-]?id|ip[\s_-]?no|op[\s_-]?no|reg(?:istration)?[\s_-]?(?:no|number))\b(\s*[:#=-]?\s*)((?=[A-Z0-9/-]*\d)[A-Z0-9][A-Z0-9/-]{3,})")
 _PATIENT_FIELD = re.compile(r"(?i)\b(patient(?:\s+name)?|dob|date of birth|diagnosis|prescription|medication)\b(?!\s*[:=]\s*\[[A-Z-]+\])(\s*[:=]\s*)([^\n,;|]{2,60})")
 
 _PATTERNS = [

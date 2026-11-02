@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_opd-004
+  app: hospital
+  title: Previous patient search
+  description: 'Auto-compiled from opd.yaml / OPD-004. Business assertions: Search
+    selects canonical existing patient not duplicate'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Search selects canonical existing patient not duplicate
+  sources:
+  - file: spec:opd.yaml#OPD-004
+  steps:
+  - action: goto
+    path: /hospital-dashboard/opd/previouspatients
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: OPD-004
+    model: deterministic-fallback
+    source_sha256: d6749afd090a1e01ea04b38286a392e334916152969836a83f62123b6f04edf8
+    compiled: false
+    requires_human_approval: true
+  role: doctor
