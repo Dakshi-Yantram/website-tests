@@ -1,0 +1,91 @@
+schema_version: nurseconnect.agent.workflow.v1
+application: nurseconnect
+workflows:
+- id: S-PUBLIC-PACKAGES
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /packages renders its source-defined 'Our Care Packages' section
+  write_test: false
+  source_anchors:
+  - /packages
+  source_files:
+  - frontend/src/routes/packages.index.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /packages and verify literal visible UI text 'Our Care
+      Packages'
+  assertions:
+  - description: Source-defined visible text 'Our Care Packages' is present on /packages
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-PUBLIC-SERVICES
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /services renders its source-defined 'Healthcare services' section
+  write_test: false
+  source_anchors:
+  - /services
+  source_files:
+  - frontend/src/routes/services.index.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /services and verify literal visible UI text 'Healthcare
+      services'
+  assertions:
+  - description: Source-defined visible text 'Healthcare services' is present on /services
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-LOGIN
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P1
+  objective: Confirm /auth/login renders its source-defined 'Welcome Back' section
+  write_test: false
+  source_anchors:
+  - /auth/login
+  source_files:
+  - frontend/src/routes/auth.login.tsx
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  steps:
+  - action: navigate_or_call
+    description: Navigate to /auth/login and verify literal visible UI text 'Welcome
+      Back'
+  assertions:
+  - description: Source-defined visible text 'Welcome Back' is present on /auth/login
+  - description: No fatal client-side rendering prevents this section from displaying
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
+- id: S-LOGIN-INPUTS
+  module: source-anchored-smoke
+  role: anonymous
+  priority: P0
+  objective: Login page contains an email field, password field, and Login button
+  write_test: false
+  source_anchors:
+  - /auth/login
+  source_files:
+  - frontend/src/routes/auth.login.tsx
+  preconditions:
+  - Public login page reachable
+  - No credential submission
+  steps:
+  - action: navigate_or_call
+    description: Open login page and inspect user-visible sign-in controls without
+      submitting
+  assertions:
+  - description: Email and password fields are visible
+  - description: Login button is visible
+  negative_and_boundary_tests: []
+  status: SPECIFIED_NOT_EXECUTED
