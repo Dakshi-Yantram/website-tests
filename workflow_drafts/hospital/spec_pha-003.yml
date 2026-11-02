@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_pha-003
+  app: hospital
+  title: Batch/manufacturer data
+  description: 'Auto-compiled from pharmacy.yaml / PHA-003. Business assertions: Batch
+    metadata valid and searchable'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Batch metadata valid and searchable
+  sources:
+  - file: spec:pharmacy.yaml#PHA-003
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: PHA-003
+    model: deterministic-fallback
+    source_sha256: f591a98eea23610e1cd49eb025724ec4ffd87fe2bba678386f44e3243a2d1658
+    compiled: false
+    requires_human_approval: true
+  role: pharmacy

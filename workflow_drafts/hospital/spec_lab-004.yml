@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_lab-004
+  app: hospital
+  title: Walk-in laboratory patient
+  description: 'Auto-compiled from lab.yaml / LAB-004. Business assertions: Patient
+    encounter and order linkage'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Patient encounter and order linkage
+  sources:
+  - file: spec:lab.yaml#LAB-004
+  steps:
+  - action: goto
+    path: /hospital-dashboard/pathology/walkin
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: LAB-004
+    model: deterministic-fallback
+    source_sha256: bbeb98da423283f90d736636f76428485ffe1792b8cda4d56ae8f203c8953429
+    compiled: false
+    requires_human_approval: true
+  role: lab

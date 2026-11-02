@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: spec_rec-007
+  app: hospital
+  title: Appointment bill and confirmation
+  description: 'Auto-compiled from reception.yaml / REC-007. Business assertions:
+    Bill correct; no double charges; confirmation matches backend'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Bill correct
+  - no double charges
+  - confirmation matches backend
+  sources:
+  - file: spec:reception.yaml#REC-007
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/appointment/billing
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-007
+    model: deterministic-fallback
+    source_sha256: 4eb559f099e5579e4fba17b5b367828eba1b68807db560f6648c8e7511695741
+    compiled: false
+    requires_human_approval: true
+  role: reception

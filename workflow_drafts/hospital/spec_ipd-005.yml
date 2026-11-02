@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_ipd-005
+  app: hospital
+  title: C-section newborn from OT timeline
+  description: 'Auto-compiled from ipd.yaml / IPD-005. Business assertions: Newborn
+    associated with correct OT case and mother'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Newborn associated with correct OT case and mother
+  sources:
+  - file: spec:ipd.yaml#IPD-005
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: IPD-005
+    model: deterministic-fallback
+    source_sha256: e21bddaac735c2042d3796fe55a78a69ca4dda37e3cb75f3aeaa5dd4dbac26c5
+    compiled: false
+    requires_human_approval: true
+  role: doctor

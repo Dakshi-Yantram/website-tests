@@ -1,0 +1,566 @@
+{
+  "total_source_workflows": 70,
+  "selected": 70,
+  "results": [
+    {
+      "id": "ADM-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_adm-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "ADM-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_adm-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "ADM-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_adm-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "AUTH-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_auth-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "AUTH-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_auth-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "AUTH-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_auth-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "AUTH-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_auth-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "AUTH-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_auth-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "EMR-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_emr-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "EMR-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_emr-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "FIN-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_fin-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "FIN-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_fin-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "FIN-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_fin-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "HR-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_hr-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "HR-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_hr-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "HR-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_hr-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "HR-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_hr-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "HR-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_hr-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "IPD-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ipd-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "IPD-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ipd-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "IPD-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ipd-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "IPD-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ipd-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "IPD-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ipd-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "LAB-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_lab-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "LAB-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_lab-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "LAB-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_lab-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "LAB-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_lab-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "NUR-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_nur-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "NUR-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_nur-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OPD-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_opd-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OPD-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_opd-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OPD-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_opd-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OPD-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_opd-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OT-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ot-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OT-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ot-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OT-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ot-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OT-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ot-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "OT-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_ot-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "PHA-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_pha-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "PHA-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_pha-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "PHA-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_pha-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "PHA-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_pha-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "RAD-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rad-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-006",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-006.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-007",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-007.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-008",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-008.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-009",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-009.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "REC-010",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_rec-010.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-002",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-002.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-003",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-003.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-004",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-004.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-005",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-005.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-006",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-006.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-007",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-007.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-008",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-008.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-009",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-009.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-010",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-010.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-011",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-011.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-012",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-012.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-013",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-013.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-014",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-014.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-015",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-015.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "SHR-016",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_shr-016.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    },
+    {
+      "id": "TRI-001",
+      "state": "DRAFT",
+      "path": "C:\\Users\\Dell\\Documents\\GitHub\\website-tests\\workflow_drafts\\hospital\\spec_tri-001.yml",
+      "needs_verification": 1,
+      "contains_staging_write": false,
+      "compile_issue": ""
+    }
+  ]
+}
