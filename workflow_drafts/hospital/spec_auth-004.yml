@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_auth-004
+  app: hospital
+  title: Hospital tenant isolation
+  description: 'Auto-compiled from auth.yaml / AUTH-004. Business assertions: Hospital
+    A records inaccessible to Hospital B via ID substitutions'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Hospital A records inaccessible to Hospital B via ID substitutions
+  sources:
+  - file: spec:auth.yaml#AUTH-004
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: AUTH-004
+    model: deterministic-fallback
+    source_sha256: dc1362c7d83fc74f9f3ecd82467bfc2cc9b84d4dd17d02ab135699dc48637c28
+    compiled: false
+    requires_human_approval: true
+  role: hospital_admin

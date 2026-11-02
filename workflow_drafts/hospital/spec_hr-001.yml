@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_hr-001
+  app: hospital
+  title: HR module access and navigation
+  description: 'Auto-compiled from hr.yaml / HR-001. Business assertions: HR-only
+    records protected from non-HR roles'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - HR-only records protected from non-HR roles
+  sources:
+  - file: spec:hr.yaml#HR-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/hr
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: HR-001
+    model: deterministic-fallback
+    source_sha256: a3c8320b56671251eccc58deebb596474494a572465eb195b4443fc74db5a411
+    compiled: false
+    requires_human_approval: true
+  role: hr

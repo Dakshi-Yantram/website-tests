@@ -71,6 +71,8 @@ ACTIONS = {
     "expect_authenticated": (set(), set(), False),       # no password field visible, not on a login URL
     "expect_no_writes_sent": (set(), set(), False),      # nothing non-GET got past the guard in this workflow so far
     "screenshot":      (set(), {"name"}, False),
+    "reload":          (set(), set(), False),
+    "require_verified": ({"reason"}, set(), False),
 }
 WRITE_ACTIONS = {a for a, (_, _, w) in ACTIONS.items() if w}
 STEP_KEYS = {"id", "action", "expected", "timeout_ms", "severity", "optional"}
@@ -209,6 +211,8 @@ def validate_workflow(wf, *, draft_rules: bool = False) -> list:
             problems.append(f"{where}: timeout_ms must be an integer {MIN_TIMEOUT_MS}..{MAX_TIMEOUT_MS}")
         if "target" in st:
             _check_target(st["target"], where, problems)
+        if act == "require_verified" and (not isinstance(st.get("reason"), str) or not st.get("reason", "").strip()):
+            problems.append(f"{where}: reason must be non-empty")
         if act == "goto" and "path" in st:
             p = st["path"]
             if not isinstance(p, str) or not p.startswith("/") or p.startswith("//") or re.search(r"(://|\\|\.\.|\s)", p):

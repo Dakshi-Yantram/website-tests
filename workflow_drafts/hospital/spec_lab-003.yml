@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_lab-003
+  app: hospital
+  title: Lab pricing
+  description: 'Auto-compiled from lab.yaml / LAB-003. Business assertions: Updated
+    prices applied to future eligible orders'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Updated prices applied to future eligible orders
+  sources:
+  - file: spec:lab.yaml#LAB-003
+  steps:
+  - action: goto
+    path: /hospital-dashboard/pathology/testpricing
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: LAB-003
+    model: deterministic-fallback
+    source_sha256: 752e3fb3e018400d0b98e064abf60dedeec3e60c9b3d6ad12a469a947bde19b0
+    compiled: false
+    requires_human_approval: true
+  role: lab

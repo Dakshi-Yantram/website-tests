@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "run_id": "synthetic_demo",
+    "environment": "local_demo",
+    "environment_kind": "local",
+    "mode": "read-only",
+    "started": "2026-10-30T00:00:00Z",
+    "finished": "2026-10-30T00:00:05Z",
+    "browser_version": "illustrative only",
+    "python": "3.11",
+    "platform": "demonstration"
+  },
+  "summary": {
+    "PASS": 0,
+    "FAIL": 1,
+    "BLOCKED": 0,
+    "NOT VERIFIED": 0,
+    "NOT TESTED": 0,
+    "total": 1
+  },
+  "workflows": [
+    {
+      "id": "SYNTHETIC-OPD-001",
+      "app": "hospital",
+      "title": "Synthetic patient registration demonstration",
+      "status": "FAIL",
+      "reason": "",
+      "approval_state": "",
+      "risk": "high",
+      "writes": false,
+      "role": "",
+      "steps": [
+        {
+          "n": 1,
+          "action": "goto",
+          "expected": "Open registration page",
+          "actual": "Page opened",
+          "status": "PASS",
+          "severity": "",
+          "duration_s": 0.0,
+          "url": "",
+          "error": "",
+          "screenshot": "",
+          "console_errors": [],
+          "failed_requests": [],
+          "timestamp": "2026-10-30T00:00:01Z",
+          "screenshot_note": ""
+        },
+        {
+          "n": 2,
+          "action": "expect_visible",
+          "expected": "Success confirmation after registering synthetic patient",
+          "actual": "Confirmation did not appear",
+          "status": "FAIL",
+          "severity": "High",
+          "duration_s": 0.0,
+          "url": "",
+          "error": "Element not found within 1500 ms",
+          "screenshot": "examples/synthetic_failure_report/source/screenshots/demo_OPD_02_FAIL.png",
+          "console_errors": [],
+          "failed_requests": [],
+          "timestamp": "2026-10-30T00:00:04Z",
+          "screenshot_note": "",
+          "screenshot_link": "screenshots/demo_OPD_02_FAIL.png"
+        }
+      ],
+      "started": "",
+      "finished": "",
+      "blocked_requests": [],
+      "source_file": ""
+    }
+  ],
+  "inventory": [],
+  "skipped": [],
+  "findings": [
+    {
+      "id": "ISSUE-c62372e5165f",
+      "type": "Selector, navigation or rendering",
+      "status": "FAIL",
+      "severity": "High",
+      "confidence": "Unconfirmed - investigation suggestion only",
+      "summary": "Element not found within 1500 ms",
+      "expected": "Success confirmation after registering synthetic patient",
+      "actual": "Confirmation did not appear",
+      "screenshot": "examples/synthetic_failure_report/source/screenshots/demo_OPD_02_FAIL.png",
+      "url": "",
+      "console_errors": [],
+      "failed_requests": [],
+      "investigate": "Check the page URL, accessible label, selector stability, load timing and user permissions.",
+      "occurrences": [
+        {
+          "workflow": "SYNTHETIC-OPD-001",
+          "step": 2,
+          "status": "FAIL"
+        }
+      ],
+      "count": 1,
+      "screenshot_link": "screenshots/demo_OPD_02_FAIL.png"
+    }
+  ]
+}

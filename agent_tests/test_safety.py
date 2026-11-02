@@ -31,8 +31,7 @@ def test_invalid_yaml_and_shape_fail_closed(tmp_path):
         load_environments(p)
 
 
-
-def test_shipped_environments_file_is_safe():
+def test_shipped_environments_file_declares_production_and_safe_staging():
     envs = load_environments()
 
     # Production must always exist and remain read-only.

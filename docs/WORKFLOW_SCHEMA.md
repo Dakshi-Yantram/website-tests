@@ -65,3 +65,10 @@ at run time: `Element not found within N ms: role='button', name='...'`, `Timeou
 `{{MARKER}}`, `{{SYNTH_NAME}}` and `{{RUN_ID}}` are the same for every workflow of one `agent.py run`; `{{WF_ID}}`, `{{SYNTH_PHONE}}`
 and `{{SYNTH_EMAIL}}` differ per workflow. A record created by one role can therefore be opened by a later role with
 `target: {text: "{{SYNTH_NAME}}"}`. Workflows run in file order. Each workflow logs in with ONE role (`role:`); a chain is one workflow per role.
+
+### Additional compiler-only actions
+
+- `reload`: reload current page after a synthetic write; pair it with an actual post-reload assertion.
+- `require_verified` with a required `reason`: deliberately yields `NOT VERIFIED`; used whenever a semantic assertion or boundary case cannot yet be checked. It is **never** counted as PASS.
+
+See `docs/HIMS_AUTOMATIC_COMPILER.md` for the semantic HIMS specification import, automatic compiler and approval workflow.

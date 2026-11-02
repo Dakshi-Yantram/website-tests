@@ -145,6 +145,103 @@ def cmd_draft(a):
     return 0
 
 
+def cmd_compile_spec(a):
+    """Compile one application's semantic YAML to approval-gated executable drafts."""
+    from qa_agent.spec_compiler import compile_package, read_specs, app_for
+    from qa_agent.spec_evidence import source_hints, staging_ui_hints
+    try:
+        specs = read_specs(a.spec)
+        chosen = [x for x in specs if not a.only or x[1]['id'] in a.only]
+        if not chosen:
+            say("No matching specification IDs")
+            return 2
+        doc_apps = {app_for(spec) for _, spec in chosen}
+        if len(doc_apps) != 1:
+            say("COMPILATION BLOCKED: compile one application at a time; use --app and separate app-specific documents")
+            return 2
+        app = next(iter(doc_apps))
+        if a.app and a.app != app:
+            say(f"COMPILATION BLOCKED: document belongs to {app}, but --app={a.app}; no source was inspected")
+            return 2
+        # A path is never inferred from the presence of two repos. The operator
+        # explicitly binds a document app to its checked-out source directory.
+        repo = None
+        if a.repo:
+            if '=' in a.repo:
+                repo_app, repo = a.repo.split('=', 1)
+                if repo_app != app or not repo:
+                    say(f"COMPILATION BLOCKED: source binding {a.repo!r} does not match document application {app}")
+                    return 2
+            elif app == 'hospital':
+                repo = a.repo  # compatibility with the original HIMS --repo PATH command
+            else:
+                say('COMPILATION BLOCKED: Nurse Connect requires --repo nurseconnect=PATH to prevent selecting HIMS accidentally')
+                return 2
+        if not repo:
+            # Both repositories are checked out by the GitHub App discovery job.
+            # Bind automatically from the *document application's key*; never
+            # infer from source contents or pick a random repository.
+            default_repo = ROOT / 'apps' / app
+            if default_repo.is_dir():
+                repo = str(default_repo)
+            else:
+                say(f"COMPILATION BLOCKED: source for {app} is not checked out at apps/{app}; provide --repo {app}=PATH")
+                return 2
+        source = source_hints(repo, chosen, app=app)
+        browser = {}
+        if a.inspect:
+            if not a.env:
+                say('--inspect requires --env with a declared staging/local deployment')
+                return 2
+            env = get_environment(a.env, a.env_file)
+            browser = staging_ui_hints(chosen, env=env, app=app, limit=a.max_pages)
+        out_dir = Path(a.out) if a.out else DRAFTS_DIR / app
+        report = compile_package(a.spec, out_dir, model=a.model, only=a.only,
+                                 source_lookup=source, browser_lookup=browser,
+                                 refresh=a.refresh)
+    except (AgentError, ValueError, OSError, RuntimeError) as e:
+        say(f"COMPILATION BLOCKED: {redact(str(e))}")
+        return 2
+    summary = {}
+    for x in report['results']:
+        summary[x['state']] = summary.get(x['state'], 0) + 1
+    say(f"Compiled {app} specifications: {report['selected']} selected; states={summary}")
+    say(f"Unverified business checks: {sum(x.get('needs_verification', 0) for x in report['results'])}; "
+        f"compiler warnings: {sum(bool(x.get('compile_issue')) for x in report['results'])}")
+    for x in report['results']:
+        if x['state'] != 'DRAFT':
+            say(f"  {x['state']} {x['id']}: {x.get('problems', [])}")
+    say(f"Drafts and compilation_report.json: {out_dir}")
+    say('NOT EXECUTED. Review drafts, approve, and run against verified staging.')
+    return 2 if any(x['state'] != 'DRAFT' for x in report['results']) else 0
+
+def cmd_approve_batch(a):
+    """Human explicitly approves a collection of drafts, without repeated manual selector editing."""
+    from qa_agent.workflows import load_yaml_file
+    paths = sorted(Path(a.dir).glob('spec_*.yml'))
+    if not paths:
+        say('No spec_*.yml drafts found')
+        return 2
+    approved, rejected = [], []
+    store = ApprovalStore()
+    for f in paths:
+        doc = load_yaml_file(f)
+        wf = doc.get('workflows', [{}])[0]
+        if not a.include_unverified and any(s.get('action') == 'require_verified' for s in wf.get('steps', [])):
+            rejected.append((f.name, 'missing test assertions; --include-unverified to approve partial tests'))
+            continue
+        try:
+            ids = promote_draft(f, store=store, by=a.by, reason=a.reason,
+                                confirm_writes=a.i_understand_this_writes)
+            approved.extend(ids)
+        except (AgentError, ValueError, OSError) as e:
+            rejected.append((f.name, redact(str(e))))
+    say(f"Batch approved: {len(approved)}; not approved: {len(rejected)}")
+    for name, reason in rejected[:15]:
+        say(f"  {name}: {reason}")
+    return 2 if rejected else 0
+
+
 def cmd_approve(a):
     store = ApprovalStore()
     try:
@@ -282,13 +379,47 @@ def cmd_run(a):
     allow = a.allow_write or os.getenv("ALLOW_WRITE_TESTS", "").strip().lower() in ("1", "true", "yes")
     try:
         wfs = load_all([Path(f) for f in a.file] if a.file else None)
+        if a.spec:
+            # The document is authoritative: do not run stale approved tests from an old revision.
+            import hashlib
+            from qa_agent.spec_compiler import read_specs, _make_id, app_for
+            srclist = read_specs(a.spec)
+            spec_apps = {app_for(spec) for _, spec in srclist}
+            if a.app != 'all' and spec_apps != {a.app}:
+                raise WorkflowFileError(f'--spec belongs to {sorted(spec_apps)}, but --app={a.app}; no workflows executed')
+            wanted = {x['id']: (hashlib.sha256(json.dumps(x, sort_keys=True, ensure_ascii=True).encode('utf-8')).hexdigest(), _make_id(x))
+                      for _, x in srclist if not a.workflow or _make_id(x) in a.workflow or x['id'] in a.workflow}
+            if not wanted:
+                raise WorkflowFileError('No HIMS specification IDs match the requested --workflow filters')
+            indexed = {w['id']: w for w in wfs}
+            problems = []
+            for sid, (hash_now, wid) in wanted.items():
+                wf = indexed.get(wid)
+                if wf is None:
+                    problems.append(f'{sid}: no approved executable workflow found; compile-spec and approve-batch first')
+                elif wf.get('app') != app_for(next(spec for _, spec in srclist if spec['id'] == sid)):
+                    problems.append(f'{sid}: compiled workflow app does not match the source document')
+                elif wf.get('generated', {}).get('source_sha256') != hash_now:
+                    problems.append(f'{sid}: source document changed after approval; recompile and reapprove')
+            if problems:
+                say('SPECIFICATION GATE BLOCKED - no tests executed:')
+                for issue in problems[:25]:
+                    say('  - ' + issue)
+                if len(problems) > 25:
+                    say(f'  ... {len(problems) - 25} more missing or stale workflows')
+                return 2
+            wfs = [indexed[wid] for _, wid in wanted.values()]
     except (SchemaError, WorkflowFileError) as e:
         say("INVALID workflows - nothing was run:")
         for p in (e.problems if isinstance(e, SchemaError) else [str(e)]):
             say(f"  - {p}")
         return 2
+    selection = tuple(a.workflow or ())
+    if a.spec and selection:
+        from qa_agent.spec_compiler import _make_id
+        selection = tuple(_make_id({'id': wid}) if not wid.startswith('spec_') else wid for wid in selection)
     cfg = RunConfig(apps=apps, env=env, mode=mode, allow_write=allow, confirm_phrase=os.getenv("STAGING_WRITE_CONFIRMATION", ""),
-                    confirmed_workflows=tuple(a.confirm_write or ()), only=tuple(a.workflow or ()), base_urls=base_urls,
+                    confirmed_workflows=tuple(a.confirm_write or ()), only=selection, base_urls=base_urls,
                     headless=not a.headed, browser=a.browser, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""))
     runner = Runner(cfg)
     results = runner.run(wfs)
@@ -307,6 +438,8 @@ def cmd_run(a):
         return 1
     if a.fail_on_blocked and s["BLOCKED"]:
         return 4
+    if getattr(a, 'fail_on_incomplete', False) and (s['NOT VERIFIED'] or s['NOT TESTED']):
+        return 5
     return 0
 
 
@@ -335,6 +468,28 @@ def build_parser():
     g.add_argument("--out", default=str(DRAFTS_DIR))
     g.add_argument("--only", choices=list(APPS))
     g.set_defaults(fn=cmd_draft)
+
+    sc = sub.add_parser("compile-spec", help="compile hospital or Nurse Connect semantic YAML into agent-executable reviewable drafts")
+    sc.add_argument("--spec", required=True, help="app-specific semantic YAML, workflow directory or ZIP")
+    sc.add_argument("--app", choices=list(APPS), help="must match the document's application")
+    sc.add_argument("--out", help="optional output directory; default workflow_drafts/<application>")
+    sc.add_argument("--repo", help="explicit APP=PATH source binding; legacy bare path supported for hospital only")
+    sc.add_argument("--refresh", action="store_true", help="archive previous unapproved draft and recompile after document changes")
+    sc.add_argument("--model", help="optional AI compiler model (requires OPENAI_API_KEY and pip install openai)")
+    sc.add_argument("--only", action="append", help="spec id, e.g. OPD-001 (repeatable)")
+    sc.add_argument("--inspect", action="store_true", help="inspect staging UI controls with Playwright (never production)")
+    sc.add_argument("--env", help="declared staging/local environment name")
+    sc.add_argument("--env-file", help="optional environment YAML config path")
+    sc.add_argument("--max-pages", type=int, default=12)
+    sc.set_defaults(fn=cmd_compile_spec)
+
+    ab = sub.add_parser("approve-batch", help="human batch approval of compiled drafts")
+    ab.add_argument("--dir", default=str(DRAFTS_DIR / "hospital"))
+    ab.add_argument("--by", required=True)
+    ab.add_argument("--reason", required=True)
+    ab.add_argument("--i-understand-this-writes", action="store_true")
+    ab.add_argument("--include-unverified", action="store_true", help="also approve tests with missing assertions; report NOT VERIFIED")
+    ab.set_defaults(fn=cmd_approve_batch)
 
     ap = sub.add_parser("approve", help="explicitly approve a draft file or an existing workflow")
     grp = ap.add_mutually_exclusive_group(required=True)
@@ -376,6 +531,7 @@ def build_parser():
     r.add_argument("--env-file")
     r.add_argument("--workflow", action="append", help="run only this id (repeatable)")
     r.add_argument("--file", action="append", help="use these workflow files instead of workflows.yml + workflows_approved/")
+    r.add_argument("--spec", help="app-specific semantic ZIP/YAML/folder; run ONLY matching current approved workflows")
     r.add_argument("--base-url", action="append", help="APP=URL override")
     r.add_argument("--dry-run", action="store_true", help="evaluate every gate, launch no browser")
     r.add_argument("--read-only", action="store_true", help="skip every workflow that writes")
@@ -384,6 +540,7 @@ def build_parser():
     r.add_argument("--headed", action="store_true")
     r.add_argument("--browser", choices=["chromium", "firefox", "webkit"], default="chromium")
     r.add_argument("--fail-on-blocked", action="store_true")
+    r.add_argument("--fail-on-incomplete", action="store_true", help="exit nonzero when NOT VERIFIED or NOT TESTED workflows remain")
     r.add_argument("--report-dir")
     r.add_argument("--drafts-dir", default=str(DRAFTS_DIR))
     r.set_defaults(fn=cmd_run)

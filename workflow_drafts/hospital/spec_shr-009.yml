@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_shr-009
+  app: hospital
+  title: Server idempotency
+  description: 'Auto-compiled from shared.yaml / SHR-009. Business assertions: Identical
+    request/key commits once; conflict reported'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Identical request/key commits once
+  - conflict reported
+  sources:
+  - file: spec:shared.yaml#SHR-009
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-009
+    model: deterministic-fallback
+    source_sha256: f37c8d0c19caf503c1d0ce4155f7d7ff23deb8f375bd103631b7530f6a620a7d
+    compiled: false
+    requires_human_approval: true
+  role: reception

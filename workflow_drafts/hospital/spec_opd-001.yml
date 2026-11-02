@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_opd-001
+  app: hospital
+  title: OPD list and doctor patient workflow
+  description: 'Auto-compiled from opd.yaml / OPD-001. Business assertions: Correct
+    OPD encounter and patient info; refresh stable'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct OPD encounter and patient info
+  - refresh stable
+  sources:
+  - file: spec:opd.yaml#OPD-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/opd
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: OPD-001
+    model: deterministic-fallback
+    source_sha256: b92b87090447349f7e19c4c79cffe15c58da5705069f88571aaf96c976d0285c
+    compiled: false
+    requires_human_approval: true
+  role: doctor

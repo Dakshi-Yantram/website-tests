@@ -1,0 +1,3 @@
+-r requirements.txt
+# Optional: needed only for AI-assisted conversion of semantic specifications.
+openai>=1.65

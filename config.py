@@ -101,6 +101,15 @@ AGENT_ROLES = {
     "operations": Role("operations", "nurseconnect", "OPS_EMAIL", "OPS_PASSWORD", "OPS_LANDING_PATH", ""),
     "reviewer": Role("reviewer", "nurseconnect", "REVIEWER_EMAIL", "REVIEWER_PASSWORD", "REVIEWER_LANDING_PATH", ""),
     "admin": Role("admin", "nurseconnect", "ADMIN_EMAIL", "ADMIN_PASSWORD", "ADMIN_LANDING_PATH", ""),
+    # HIMS roles are available only to the YAML agent, so legacy parameterized tests stay unchanged.
+    "lab": Role("lab", "hospital", "HIMS_LAB_EMAIL", "HIMS_LAB_PASSWORD"),
+    "radiology": Role("radiology", "hospital", "HIMS_RADIOLOGY_EMAIL", "HIMS_RADIOLOGY_PASSWORD"),
+    "pharmacy": Role("pharmacy", "hospital", "HIMS_PHARMACY_EMAIL", "HIMS_PHARMACY_PASSWORD"),
+    "finance": Role("finance", "hospital", "HIMS_FINANCE_EMAIL", "HIMS_FINANCE_PASSWORD"),
+    "hr": Role("hr", "hospital", "HIMS_HR_EMAIL", "HIMS_HR_PASSWORD"),
+    "nurse_hospital": Role("nurse_hospital", "hospital", "HIMS_NURSE_EMAIL", "HIMS_NURSE_PASSWORD"),
+    "hospital_admin": Role("hospital_admin", "hospital", "HIMS_HOSPITAL_ADMIN_EMAIL", "HIMS_HOSPITAL_ADMIN_PASSWORD"),
+    "super_admin": Role("super_admin", "hospital", "HIMS_SUPER_ADMIN_EMAIL", "HIMS_SUPER_ADMIN_PASSWORD"),
 }
 _ONLY = os.getenv("APP_ONLY", "").strip().lower()
 if _ONLY:
