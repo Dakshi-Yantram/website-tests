@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: spec_lab-002
+  app: hospital
+  title: Lab result report upload
+  description: 'Auto-compiled from lab.yaml / LAB-002. Business assertions: Right
+    patient/order; persisted file; authorized retrieval'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Right patient/order
+  - persisted file
+  - authorized retrieval
+  sources:
+  - file: spec:lab.yaml#LAB-002
+  steps:
+  - action: goto
+    path: /hospital-dashboard/pathology/upload
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: LAB-002
+    model: deterministic-fallback
+    source_sha256: 67742cd7730f5769ce91fa34a4c5c98e86f9647f1363537960384854ce2f26f2
+    compiled: false
+    requires_human_approval: true
+  role: lab

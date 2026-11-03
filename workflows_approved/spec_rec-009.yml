@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_rec-009
+  app: hospital
+  title: Insurance workflows
+  description: 'Auto-compiled from reception.yaml / REC-009. Business assertions:
+    Correct insurer and patient mapping; no accidental double coverage'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct insurer and patient mapping
+  - no accidental double coverage
+  sources:
+  - file: spec:reception.yaml#REC-009
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/insurance
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-009
+    model: deterministic-fallback
+    source_sha256: 3c7264569a3c9066d37457024bc26b5cd964a43784a2fd998b21d6d03314ac30
+    compiled: false
+    requires_human_approval: true
+  role: reception

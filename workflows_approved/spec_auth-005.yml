@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_auth-005
+  app: hospital
+  title: Patient-level clinical visibility
+  description: 'Auto-compiled from auth.yaml / AUTH-005. Business assertions: Authorized
+    record visible; denied record blocked server-side'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Authorized record visible
+  - denied record blocked server-side
+  sources:
+  - file: spec:auth.yaml#AUTH-005
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: AUTH-005
+    model: deterministic-fallback
+    source_sha256: 9347a31a2c2c1f51c3648de4aff65920269b74f746d6c14241b4b171b73631d4
+    compiled: false
+    requires_human_approval: true
+  role: doctor
