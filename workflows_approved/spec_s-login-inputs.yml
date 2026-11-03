@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_s-login-inputs
+  app: nurseconnect
+  title: Login page contains an email field, password field, and Login button
+  description: Anonymous login-form static read-only smoke (no attempted authentication).
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Public login page reachable
+  - No credential submission
+  expected_outcome:
+  - Email and password fields are visible
+  - Login button is visible
+  sources:
+  - file: frontend/src/routes/auth.login.tsx
+  - file: spec:nurseconnect_ci_smoke.yaml#S-LOGIN-INPUTS
+  steps:
+  - action: goto
+    path: /auth/login
+  - action: expect_visible
+    target:
+      css: input[type="email"]
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+  - action: expect_visible
+    target:
+      role: button
+      name: Login
+  - action: expect_no_writes_sent
+  generated:
+    method: source-anchored-read-only-smoke
+    original_id: S-LOGIN-INPUTS
+    source_sha256: 13dd2b4cca3f246e5f49d04e2fc1889d120c5eec756d321d617bdff70da8e592
+    model: none
+    compiled: false
+    requires_human_approval: true

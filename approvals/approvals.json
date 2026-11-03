@@ -719,6 +719,42 @@
       "reason": "Read-only page checks",
       "risk": "high",
       "writes": false
+    },
+    "spec_s-login": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "4e2b98e03519f4f9b5597bd7a24200731717a65aa014aeddfcf45614bdb1e9d8",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-login-inputs": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c76a0e76ac4b53360ca393b0f76c6e4cbb1778dda51a8ad3498fbbf26bd22a5e",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-public-packages": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "6b563810c7bac914e5259e6e977cfdce8106eee34094f30d4c11decdeb836ad1",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-public-services": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "dea1e03c58b0b471b9bc1b5977d7715a773d3f40cdc8bb692cb75ffd7a0b176b",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
     }
   },
   "version": 1
