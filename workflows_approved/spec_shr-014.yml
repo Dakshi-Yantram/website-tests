@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_shr-014
+  app: hospital
+  title: Data security headers and request hygiene
+  description: 'Auto-compiled from shared.yaml / SHR-014. Business assertions: Configured
+    headers; no secrets logged'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Configured headers
+  - no secrets logged
+  sources:
+  - file: spec:shared.yaml#SHR-014
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-014
+    model: deterministic-fallback
+    source_sha256: 4bb4ce05d67e8859f17958415a49351afe7b63cf8284f0926c465ff93c8e7163
+    compiled: false
+    requires_human_approval: true
+  role: doctor

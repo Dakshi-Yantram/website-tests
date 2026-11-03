@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_rad-001
+  app: hospital
+  title: Radiology orders/worklist
+  description: 'Auto-compiled from radiology.yaml / RAD-001. Business assertions:
+    Correct queue; report/result associated with order'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct queue
+  - report/result associated with order
+  sources:
+  - file: spec:radiology.yaml#RAD-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/radiology
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: RAD-001
+    model: deterministic-fallback
+    source_sha256: 59be2e855391eafa33e961e289520b7004117819f9d8f6f4bc9163c562b8f711
+    compiled: false
+    requires_human_approval: true
+  role: radiology

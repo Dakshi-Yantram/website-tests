@@ -26,7 +26,13 @@ environments:
     allowed_origins:
       - https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev
       - https://see-resist-teams-integral.trycloudflare.com
+      # - http://localhost:8080
     auth_origins:
       - https://see-resist-teams-integral.trycloudflare.com
     apps:
       nurseconnect: {base_url: https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev}
+      # nurseconnect: {base_url: http://localhost:8080}
+    # verify:
+    #   path: /qa-environment.json
+    #   json_key: environment
+    #   equals: staging

@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_pha-004
+  app: hospital
+  title: Stock audit trail
+  description: 'Auto-compiled from pharmacy.yaml / PHA-004. Business assertions: Changes
+    attributed to authenticated actor with correct balances'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Changes attributed to authenticated actor with correct balances
+  sources:
+  - file: spec:pharmacy.yaml#PHA-004
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: PHA-004
+    model: deterministic-fallback
+    source_sha256: 7f2df07b7042c328f18e1a783e1f61df087243b689a436d060bffc1d6685219f
+    compiled: false
+    requires_human_approval: true
+  role: pharmacy

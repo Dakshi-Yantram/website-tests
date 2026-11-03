@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_hr-002
+  app: hospital
+  title: Payroll calculations and approval
+  description: 'Auto-compiled from hr.yaml / HR-002. Business assertions: Pay values
+    correct; approved payroll immutable or auditable'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Pay values correct
+  - approved payroll immutable or auditable
+  sources:
+  - file: spec:hr.yaml#HR-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: HR-002
+    model: deterministic-fallback
+    source_sha256: 0a97eb5c739235571c4b0149d7ce497267c843cf0d1115cb33184e720ac518c6
+    compiled: false
+    requires_human_approval: true
+  role: hr
