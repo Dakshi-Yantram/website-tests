@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-013
+  app: hospital
+  title: Server action authorization
+  description: 'Auto-compiled from shared.yaml / SHR-013. Business assertions: No
+    write without entitlement regardless UI'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - No write without entitlement regardless UI
+  sources:
+  - file: spec:shared.yaml#SHR-013
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-013
+    model: deterministic-fallback
+    source_sha256: 5a571caffd6996041b205b062e3d674cb5fa6974d7082f95583a716db1089828
+    compiled: false
+    requires_human_approval: true
+  role: doctor

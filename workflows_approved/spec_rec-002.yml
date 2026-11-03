@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: spec_rec-002
+  app: hospital
+  title: Create OPD encounter for existing patient
+  description: 'Auto-compiled from reception.yaml / REC-002. Business assertions:
+    Correct person selected; OPD timeline created; listed in queue'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct person selected
+  - OPD timeline created
+  - listed in queue
+  sources:
+  - file: spec:reception.yaml#REC-002
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/opd
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-002
+    model: deterministic-fallback
+    source_sha256: 5fc963e601d330a61ae2235e0b5d59dd47dcdbc3add81652e060e159230fa1dc
+    compiled: false
+    requires_human_approval: true
+  role: reception

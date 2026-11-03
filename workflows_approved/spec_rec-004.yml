@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_rec-004
+  app: hospital
+  title: Emergency intake to triage
+  description: 'Auto-compiled from reception.yaml / REC-004. Business assertions:
+    Emergency visit appears in triage and emergency modules'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Emergency visit appears in triage and emergency modules
+  sources:
+  - file: spec:reception.yaml#REC-004
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/emergency
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-004
+    model: deterministic-fallback
+    source_sha256: 07bd31a0608731de62019281d0876877818520f26a65b9d199785b11d1067d79
+    compiled: false
+    requires_human_approval: true
+  role: reception

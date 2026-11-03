@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_opd-002
+  app: hospital
+  title: Open/edit clinical encounter
+  description: 'Auto-compiled from opd.yaml / OPD-002. Business assertions: Notes
+    and history persisted; no cross patient mixing'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Notes and history persisted
+  - no cross patient mixing
+  sources:
+  - file: spec:opd.yaml#OPD-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: OPD-002
+    model: deterministic-fallback
+    source_sha256: ed7b71c9a91d8dd0fb21010d37e656eedac2814536593a48f0d716aece28fa87
+    compiled: false
+    requires_human_approval: true
+  role: doctor

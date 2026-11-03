@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: spec_auth-002
+  app: hospital
+  title: Login and stable session
+  description: 'Auto-compiled from auth.yaml / AUTH-002. Business assertions: Expected
+    landing; correct authenticated context; logout invalidates session'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Expected landing
+  - correct authenticated context
+  - logout invalidates session
+  sources:
+  - file: spec:auth.yaml#AUTH-002
+  steps:
+  - action: goto
+    path: /login
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: AUTH-002
+    model: deterministic-fallback
+    source_sha256: fd6212e794f69ed9290a449b6b425dfc02f9034f530b8171137337934b3201e9
+    compiled: false
+    requires_human_approval: true
+  role: reception
