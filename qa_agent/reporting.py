@@ -72,6 +72,33 @@ def _screenshot_markup(step):
             f'alt="Masked failure screenshot"></a>')
 
 
+def _source_md(sources) -> list:
+    """Source code under test. Missing/dirty states are shown explicitly, never hidden."""
+    if not sources:
+        return ["- Source commits: **NOT RECORDED** (run with --source frontend=PATH --source backend=PATH)"]
+    out = ["- Source commits under test:"]
+    for n, r in sources.items():
+        if not r.get("available"):
+            out.append(f"  - `{n}`: **UNAVAILABLE** - {r.get('reason', '')}")
+        else:
+            flag = f" **UNCOMMITTED CHANGES ({r['dirty_files']} file(s))**" if r.get("dirty") else ""
+            out.append(f"  - `{n}`: `{r['sha']}` on `{r.get('branch', '')}`{flag}")
+    return out
+
+
+def _source_html(sources) -> str:
+    if not sources:
+        return "<br>Source commits: <b>NOT RECORDED</b>"
+    parts = []
+    for n, r in sources.items():
+        if not r.get("available"):
+            parts.append(f"{_e(n)}: <b>UNAVAILABLE</b> ({_e(r.get('reason', ''))})")
+        else:
+            flag = f" <b>UNCOMMITTED CHANGES ({_e(r['dirty_files'])})</b>" if r.get("dirty") else ""
+            parts.append(f"{_e(n)}: <code>{_e(r['sha'])}</code> on {_e(r.get('branch', ''))}{flag}")
+    return "<br>Source commits: " + " &middot; ".join(parts)
+
+
 def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | None = None) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -119,7 +146,8 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
     md = [f"# Test run {run_id}", "",
           f"- Environment: **{m['environment']}** ({m['environment_kind']})   Mode: **{m['mode']}**",
           f"- Started: {m['started']}   Finished: {m.get('finished', '')}",
-          f"- Browser: {m['browser_version']}   Python: {m['python']}   Platform: {m['platform']}", "",
+          f"- Browser: {m['browser_version']}   Python: {m['python']}   Platform: {m['platform']}",
+          *_source_md(m.get("sources")), "",
           "| " + " | ".join(STATUS_ORDER) + " | Total |", "|" + "---|" * (len(STATUS_ORDER) + 1),
           "| " + " | ".join(str(s[k]) for k in STATUS_ORDER) + f" | {s['total']} |", "",
           "## Workflows", "", "| Workflow | App | Result | Approval | Risk | Writes | Reason / note |", "|---|---|---|---|---|---|---|"]
@@ -181,7 +209,7 @@ def write_reports(results, meta: dict, out_dir, inventory=None, basename: str | 
            '.shot{display:block;max-width:460px;max-height:260px;border:1px solid #d0d7de;margin-top:8px}'
            '.finding{border:1px solid #d0d7de;border-radius:6px;padding:10px 15px;margin:12px 0}.finding h3{margin:4px 0}</style></head><body>'
            f'<h1>Test run {_e(run_id)}</h1><p>Environment <b>{_e(m["environment"])}</b> ({_e(m["environment_kind"])}) &middot; mode <b>{_e(m["mode"])}</b> &middot; '
-           f'{_e(m["started"])} &rarr; {_e(m.get("finished", ""))}<br>Browser {_e(m["browser_version"])} &middot; Python {_e(m["python"])} &middot; {_e(m["platform"])}</p>'
+           f'{_e(m["started"])} &rarr; {_e(m.get("finished", ""))}<br>Browser {_e(m["browser_version"])} &middot; Python {_e(m["python"])} &middot; {_e(m["platform"])}{_source_html(m.get("sources"))}</p>'
            f'<div class="cards">{cards}</div><h2>Issues requiring investigation</h2>{"".join(finding_rows) or "<p>None.</p>"}<h2>Workflows</h2><table><tr><th>Workflow</th><th>App</th><th>Result</th><th>Approval</th><th>Risk</th><th>Writes</th><th>Reason</th></tr>{"".join(rows)}</table>'
            f'<h2>Workflow inventory</h2><table><tr><th>Id</th><th>App</th><th>Approval</th><th>Last result</th><th>Risk</th><th>Writes</th><th>Source</th><th>Not run because</th></tr>{inv_rows}</table>'
            '<p><small>PASS = assertions ran and held. FAIL = an assertion failed or an error occurred. BLOCKED = a safety/approval/credential gate refused the run or a feature was not found. '

@@ -63,6 +63,11 @@ class Environment:
     verify: dict = field(default_factory=dict)  # optional probe
     production_origins: tuple = ()              # global production list (for blocking)
     auth_origins: tuple = ()                    # extra origins (e.g. an API host) that may receive login/session POSTs
+    api_urls: dict = field(default_factory=dict)        # app -> backend API base url (optional, checked by preflight)
+    api_verify: dict = field(default_factory=dict)      # optional probe against the API origin
+    payment: dict = field(default_factory=dict)         # sandbox declaration: provider, mode, key_id_env, key_secret_env
+    database: dict = field(default_factory=dict)        # optional: url_env, name_pattern, forbidden_hosts
+    test_data: dict = field(default_factory=dict)       # optional: marker_prefix, dedicated_accounts, account_email_regex
 
     @property
     def is_staging_like(self) -> bool:
@@ -73,6 +78,12 @@ class Environment:
             return self.base_urls[app]
         except KeyError:
             raise SafetyBlocked(f"Environment {self.name!r} has no base_url for app {app!r}")
+
+    def api_url(self, app: str) -> str:
+        try:
+            return self.api_urls[app]
+        except KeyError:
+            raise SafetyBlocked(f"Environment {self.name!r} has no api_base_url for app {app!r}")
 
 
 def load_environments(path=None) -> dict:
@@ -94,6 +105,8 @@ def load_environments(path=None) -> dict:
             for a in (e.get("apps") or {}).values():
                 if isinstance(a, dict) and a.get("base_url"):
                     prod_origins.add(normalize_origin(a["base_url"]))
+                if isinstance(a, dict) and a.get("api_base_url"):
+                    prod_origins.add(normalize_origin(a["api_base_url"]))
     prod_hosts = {_host(o) for o in prod_origins}
 
     out = {}
@@ -117,10 +130,37 @@ def load_environments(path=None) -> dict:
                 if normalize_origin(b) not in allowed:
                     raise SafetyBlocked(f"Environment {name!r}: base_url of {app} ({normalize_origin(b)}) is not in allowed_origins")
         auth_origins = tuple(sorted({normalize_origin(o) for o in (e.get("auth_origins") or [])}))
+        api_urls = {app: str(a.get("api_base_url", "")).strip() for app, a in (e.get("apps") or {}).items()
+                    if isinstance(a, dict) and a.get("api_base_url")}
+        payment = _section(name, e, "payment")
+        database = _section(name, e, "database")
+        test_data = _section(name, e, "test_data")
+        api_verify = _section(name, e, "api_verify")
+        if kind in ("staging", "local"):
+            for app, b in api_urls.items():
+                o = normalize_origin(b)
+                if o in prod_origins or _host(o) in prod_hosts:
+                    raise SafetyBlocked(f"Environment {name!r}: api_base_url of {app} ({o}) is a production origin")
+                if o not in allowed:
+                    raise SafetyBlocked(f"Environment {name!r}: api_base_url of {app} ({o}) is not in allowed_origins")
+            if payment and str(payment.get("mode", "")).lower() not in ("sandbox", "test"):
+                raise SafetyBlocked(f"Environment {name!r}: payment.mode must be 'sandbox' or 'test' (got {payment.get('mode')!r}); live payments are never allowed")
+        elif payment:
+            raise SafetyBlocked(f"Environment {name!r}: production environments must not declare a payment section")
         out[name] = Environment(name=name, kind=kind, base_urls=base_urls, allowed_origins=allowed, auth_origins=auth_origins,
                                 allow_insecure=bool(e.get("allow_insecure")), verify=dict(e.get("verify") or {}),
-                                production_origins=tuple(sorted(prod_origins)))
+                                production_origins=tuple(sorted(prod_origins)), api_urls=api_urls, api_verify=api_verify,
+                                payment=payment, database=database, test_data=test_data)
     return out
+
+
+def _section(env_name: str, e: dict, key: str) -> dict:
+    v = e.get(key)
+    if v is None:
+        return {}
+    if not isinstance(v, dict):
+        raise SafetyBlocked(f"Environment {env_name!r}: {key} must be a mapping")
+    return dict(v)
 
 
 def get_environment(name: str, path=None) -> Environment:
@@ -172,6 +212,14 @@ def check_write_allowed(env: Environment, app: str, workflow_id: str, *, allow_w
         raise SafetyBlocked(f"Origin {origin} is not in the staging allowlist of {env.name!r}")
     if origin in env.production_origins or _host(origin) in {_host(o) for o in env.production_origins}:
         raise SafetyBlocked(f"Origin {origin} is a known production origin")
+    for app_name, api in env.api_urls.items():            # a declared API host must also be a verified, non-production origin
+        o = normalize_origin(api)
+        if o not in env.allowed_origins or o in env.production_origins or _host(o) in {_host(x) for x in env.production_origins}:
+            raise SafetyBlocked(f"API origin {o} for {app_name} is not an allowed non-production origin")
+    from .preflight import payment_key_findings
+    live = payment_key_findings(env)
+    if live:
+        raise SafetyBlocked("Payment configuration is not a sandbox: " + "; ".join(live))
     if confirm_phrase != CONFIRM_PREFIX + env.name:
         raise SafetyBlocked(f"Missing/incorrect staging confirmation phrase for {env.name!r}")
     if workflow_id not in set(confirmed_workflows):
