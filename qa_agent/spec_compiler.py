@@ -328,7 +328,7 @@ def create_workflow(name, spec, *, model=None, source=None, browser=None):
     return wf, issue
 
 
-def compile_package(spec_path, out_dir, *, model=None, only=(), source_lookup=None, browser_lookup=None, refresh=False):
+def compile_package(spec_path, out_dir, *, model=None, only=(), source_lookup=None, browser_lookup=None, refresh=False, provenance=None):
     """Produce one YAML draft per specification; return a structured report."""
     target = Path(out_dir)
     specs = read_specs(spec_path)
@@ -383,5 +383,7 @@ def compile_package(spec_path, out_dir, *, model=None, only=(), source_lookup=No
                         'contains_staging_write': wf['writes'], 'compile_issue': issue})
     # No sensitive user data belongs in the summary either.
     report = {'total_source_workflows': len(specs), 'selected': len(chosen), 'results': records}
+    if provenance:
+        report['source_provenance'] = provenance   # git SHA/branch/dirty of the checkout the compiler read
     (target / 'compilation_report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     return report
