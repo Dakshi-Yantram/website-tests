@@ -10,6 +10,7 @@
   python agent.py inventory                      draft / approved / unapproved / changed + last result
   python agent.py run --env NAME [--dry-run | --read-only] [--app A] [--workflow ID]
   python agent.py verify-env --env NAME --app A
+  python agent.py preflight --env NAME --app A [--online] [--source frontend=PATH --source backend=PATH] [--json]
   python agent.py check-approvals                CI approval gate
   python agent.py scan-artifacts DIR [--fix]     redact + fail-closed scan of reports before upload
 
@@ -196,9 +197,11 @@ def cmd_compile_spec(a):
             env = get_environment(a.env, a.env_file)
             browser = staging_ui_hints(chosen, env=env, app=app, limit=a.max_pages)
         out_dir = Path(a.out) if a.out else DRAFTS_DIR / app
+        from qa_agent import provenance
         report = compile_package(a.spec, out_dir, model=a.model, only=a.only,
                                  source_lookup=source, browser_lookup=browser,
-                                 refresh=a.refresh)
+                                 refresh=a.refresh,
+                                 provenance={app: provenance.git_info(app, repo)})
     except (AgentError, ValueError, OSError, RuntimeError) as e:
         say(f"COMPILATION BLOCKED: {redact(str(e))}")
         return 2
@@ -360,6 +363,35 @@ def cmd_verify_env(a):
         return 2
 
 
+def _collect_sources(a):
+    """--source NAME=PATH (+ QA_SOURCE_<NAME> env vars) -> provenance records, or {} when none were given."""
+    from qa_agent import provenance
+    try:
+        wanted = provenance.parse_source_args(getattr(a, "source", None))
+    except ValueError as e:
+        raise SystemExit(str(e))
+    return provenance.collect(wanted)
+
+
+def cmd_preflight(a):
+    """Verify a staging environment BEFORE running tests. Nothing is written to the application."""
+    from qa_agent import preflight
+    try:
+        env = get_environment(a.env, a.env_file)
+    except SafetyBlocked as e:
+        say(f"BLOCKED: {e}")
+        return 2
+    sources = _collect_sources(a)
+    checks = preflight.run_preflight(env, a.app, online=a.online, sources=sources or None)
+    if a.json:
+        say(json.dumps({"environment": env.name, "app": a.app, "ready": preflight.is_ready(checks),
+                        "checks": [c.as_dict() for c in checks], "sources": sources}, indent=2))
+    else:
+        say(f"Preflight for environment {env.name!r} (kind={env.kind}), app {a.app}, {'online' if a.online else 'offline'}")
+        say(preflight.format_checks(checks))
+    return 0 if preflight.is_ready(checks) else 2
+
+
 def cmd_run(a):
     try:
         env = _make_env(a)
@@ -422,6 +454,7 @@ def cmd_run(a):
                     confirmed_workflows=tuple(a.confirm_write or ()), only=selection, base_urls=base_urls,
                     headless=not a.headed, browser=a.browser, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""))
     runner = Runner(cfg)
+    runner.meta["sources"] = _collect_sources(a)
     results = runner.run(wfs)
     inv = reporting.build_inventory(wfs, results, runner.store, Path(a.drafts_dir))
     try:
@@ -519,6 +552,15 @@ def build_parser():
     sa.add_argument("--fix", action="store_true", help="redact in place first")
     sa.set_defaults(fn=cmd_scan_artifacts)
 
+    pf = sub.add_parser("preflight", help="verify staging URL, API URL, payment sandbox, database, credentials and source SHAs")
+    pf.add_argument("--env", required=True)
+    pf.add_argument("--app", required=True, choices=list(APPS))
+    pf.add_argument("--env-file")
+    pf.add_argument("--online", action="store_true", help="also run the declared verification probes (GET requests to the staging origins only)")
+    pf.add_argument("--source", action="append", help="NAME=PATH of a checked-out repo (frontend, backend...); or QA_SOURCE_<NAME> env var")
+    pf.add_argument("--json", action="store_true")
+    pf.set_defaults(fn=cmd_preflight)
+
     ve = sub.add_parser("verify-env", help="check an environment definition (and its probe)")
     ve.add_argument("--env", required=True)
     ve.add_argument("--app", required=True, choices=list(APPS))
@@ -539,6 +581,7 @@ def build_parser():
     r.add_argument("--confirm-write", action="append", help="workflow id explicitly confirmed for writing (repeatable)")
     r.add_argument("--headed", action="store_true")
     r.add_argument("--browser", choices=["chromium", "firefox", "webkit"], default="chromium")
+    r.add_argument("--source", action="append", help="NAME=PATH of a checked-out repo whose git commit SHA is recorded in the report (repeatable; or QA_SOURCE_<NAME> env var)")
     r.add_argument("--fail-on-blocked", action="store_true")
     r.add_argument("--fail-on-incomplete", action="store_true", help="exit nonzero when NOT VERIFIED or NOT TESTED workflows remain")
     r.add_argument("--report-dir")
