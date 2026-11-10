@@ -452,7 +452,8 @@ def cmd_run(a):
         selection = tuple(_make_id({'id': wid}) if not wid.startswith('spec_') else wid for wid in selection)
     cfg = RunConfig(apps=apps, env=env, mode=mode, allow_write=allow, confirm_phrase=os.getenv("STAGING_WRITE_CONFIRMATION", ""),
                     confirmed_workflows=tuple(a.confirm_write or ()), only=selection, base_urls=base_urls,
-                    headless=not a.headed, browser=a.browser, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""))
+                    headless=not a.headed, browser=a.browser, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""),
+                    reuse_sessions=not getattr(a, "no_session_reuse", False))
     runner = Runner(cfg)
     runner.meta["sources"] = _collect_sources(a)
     results = runner.run(wfs)
@@ -581,6 +582,7 @@ def build_parser():
     r.add_argument("--confirm-write", action="append", help="workflow id explicitly confirmed for writing (repeatable)")
     r.add_argument("--headed", action="store_true")
     r.add_argument("--browser", choices=["chromium", "firefox", "webkit"], default="chromium")
+    r.add_argument("--no-session-reuse", action="store_true", help="log in separately for every workflow (default: one login per role per run)")
     r.add_argument("--source", action="append", help="NAME=PATH of a checked-out repo whose git commit SHA is recorded in the report (repeatable; or QA_SOURCE_<NAME> env var)")
     r.add_argument("--fail-on-blocked", action="store_true")
     r.add_argument("--fail-on-incomplete", action="store_true", help="exit nonzero when NOT VERIFIED or NOT TESTED workflows remain")
