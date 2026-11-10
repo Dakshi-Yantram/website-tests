@@ -85,6 +85,7 @@ class RunConfig:
     fetch: object = None                      # injectable HTTP fetch for environment verification (tests)
     screenshot_mode: str = ""
     lock_dir: Path | None = None
+    reuse_sessions: bool = True               # log in once per (origin, role) per run and reuse that session (avoids login rate limits)
 
 
 def default_login(page, role_name: str, base_url: str):
@@ -165,6 +166,10 @@ class Runner:
                      "environment_kind": cfg.env.kind if cfg.env else "unverified",
                      "python": platform.python_version(), "platform": platform.platform(),
                      "browser": cfg.browser, "browser_version": "(not launched)"}
+        # Per-run, IN-MEMORY only: browser storage state (cookies/localStorage) after the first successful login of each (origin, role).
+        # Never written to disk, never logged. Discarded when the run ends.
+        self._sessions = {}
+        self._login_blocked = {}     # (origin, role) -> message, once the server rate-limited that login (HTTP 429)
         self.shot_mode = cfg.screenshot_mode or screenshot_mode(cfg.env.kind if cfg.env else None)
         if not cfg.env or cfg.env.kind not in ("staging", "local"):
             self.shot_mode = "off"     # Unknown/production environment: no clinical screenshots.
@@ -274,6 +279,37 @@ class Runner:
                 browser.close()
         return out
 
+    # ---- session reuse -------------------------------------------------------------------------
+    def _new_context(self, browser, state=None):
+        cfg = self.cfg
+        kw = dict(viewport={"width": cfg.viewport[0], "height": cfg.viewport[1]}, ignore_https_errors=cfg.ignore_https_errors,
+                  accept_downloads=False, service_workers="block")
+        if state is not None:
+            kw["storage_state"] = state
+        return browser.new_context(**kw)
+
+    @staticmethod
+    def _landing_url(role_name: str, base: str) -> str:
+        prefix = ""
+        try:
+            import config
+            role = config.ROLES.get(role_name) or config.AGENT_ROLES.get(role_name)
+            prefix = (role.landing_prefix if role else "") or ""
+        except Exception:
+            pass
+        return base.rstrip("/") + (prefix if prefix.startswith("/") else "/" + prefix if prefix else "/")
+
+    def _reuse_session(self, page, role_name: str, base: str) -> bool:
+        """True only if the stored session is still accepted: the landing page opens and neither a login URL nor a password field shows."""
+        try:
+            page.goto(self._landing_url(role_name, base), wait_until="domcontentloaded")
+            self._settle(page)
+            if LOGIN_URL_RX.search(page.url):
+                return False
+            return not page.locator("input[type='password']").first.is_visible()
+        except Exception:
+            return False
+
     # ---- one workflow --------------------------------------------------------------------------
     def _run_one(self, browser, wf: dict, res: WorkflowResult):
         from utils.monitor import PageMonitor
@@ -281,8 +317,10 @@ class Runner:
         res.started = _now()
         base = self._base_url(wf["app"])
         origin = normalize_origin(base)
-        ctx = browser.new_context(viewport={"width": cfg.viewport[0], "height": cfg.viewport[1]}, ignore_https_errors=cfg.ignore_https_errors,
-                                  accept_downloads=False, service_workers="block")
+        role_name = wf.get("role")
+        key = (origin, role_name) if role_name else None
+        state = self._sessions.get(key) if (key and cfg.reuse_sessions) else None
+        ctx = self._new_context(browser, state)
         # Login/session POSTs (paths matching AUTH_PATH_RX only) may go to a separate API host, exactly like the legacy pytest
         # suite. Needed because these apps' login API is not on the page origin. Write-enabled workflows stay strict.
         guard = RequestGuard(cfg.env, origin, writes_enabled=bool(wf["writes"]), auth_any_origin=not wf["writes"])
@@ -300,12 +338,31 @@ class Runner:
                 sr = StepResult(0, "login", f"Logged in as role '{wf['role']}'", timestamp=_now())
                 page.set_default_timeout(default_timeout)
                 try:
-                    login(page, wf["role"], base)
-                    sr.status, sr.actual = "PASS", "Login completed"
+                    if key in self._login_blocked:
+                        raise StepBlocked(self._login_blocked[key])
+                    if state is not None and self._reuse_session(page, wf["role"], base):
+                        sr.status, sr.actual = "PASS", "Login completed (session reused from the first login for this role in this run)"
+                    else:
+                        if state is not None:
+                            self._sessions.pop(key, None)        # stored session no longer accepted: do a real login instead
+                        login(page, wf["role"], base)
+                        sr.status, sr.actual = "PASS", "Login completed"
+                        if cfg.reuse_sessions:
+                            try:
+                                self._sessions[key] = ctx.storage_state()
+                            except Exception:
+                                pass
                 except StepBlocked as e:
                     sr.status, sr.error = "BLOCKED", redact(str(e))
                 except AssertionError as e:
-                    sr.status, sr.error = "FAIL", redact(str(e))
+                    if "HTTP 429" in str(e):
+                        # A rate limit is an environment condition, not an application failure. Stop hammering the server for this role.
+                        sr.status = "BLOCKED"
+                        sr.error = redact(f"Login rate-limited by the server (HTTP 429) for role '{wf['role']}'. Environment issue, not an application failure; "
+                                          "further logins for this role are skipped for the rest of this run so the lockout is not extended.")
+                        self._login_blocked[key] = f"Login for role '{wf['role']}' skipped: the server rate-limited logins (HTTP 429) earlier in this run"
+                    else:
+                        sr.status, sr.error = "FAIL", redact(str(e))
                 except Exception as e:
                     sr.status, sr.error = "FAIL", redact(f"{type(e).__name__}: {str(e).splitlines()[0][:200] if str(e) else ''}")
                 if sr.status == "FAIL":
