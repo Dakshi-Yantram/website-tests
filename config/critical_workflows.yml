@@ -1,0 +1,9 @@
+# Workflows whose non-PASS result must never look like a pass in CI.
+# A workflow is "critical" if its `risk` is in risk_levels OR its id is listed under ids.
+# risk_levels must be values the workflow schema supports (low | medium | high); anything else fails the run closed.
+# A critical workflow that is NOT VERIFIED, NOT TESTED, BLOCKED (for ANY reason, including unapproved) or never executed
+# fails the CI gate (exit 6) and cannot be bypassed with --ignore-blocked.
+# This file is deliberately OUTSIDE the approved workflow YAML so editing it does not invalidate any approval.
+risk_levels: [high]
+ids:
+  - consumer_booking_flow_readonly   # NurseConnect customer booking: was NOT VERIFIED while CI stayed green

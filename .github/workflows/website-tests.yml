@@ -190,6 +190,7 @@ jobs:
       DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
       DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
       APP_ONLY: ${{ matrix.app }}
+      FAIL_ON_INCOMPLETE: ${{ vars.AGENT_FAIL_ON_INCOMPLETE }}   # the ONLY switch for --fail-on-incomplete: 'true' = any NOT VERIFIED/NOT TESTED fails the job (default: only critical ones)
       WORKFLOW_SPEC: ${{ matrix.app == 'nurseconnect' && vars.NURSECONNECT_WORKFLOW_SPEC || vars.HOSPITAL_WORKFLOW_SPEC }}
       # Same login paths as the pytest jobs - without these the agent falls back to "/" and finds no password field.
       NURSECONNECT_LOGIN_PATH: ${{ vars.NURSECONNECT_LOGIN_PATH || '/auth/login' }}
@@ -209,25 +210,91 @@ jobs:
         run: python agent.py check-approvals
       - name: Run approved workflows (read-only; reject stale spec versions)
         shell: bash
+        env:
+          # HIMS role credentials: visible ONLY to this step (not install/checkout/upload steps) and ONLY on the hospital leg;
+          # the NurseConnect leg receives empty strings. Create as SECRETS (synthetic test accounts). Names must match config.py AGENT_ROLES.
+          HIMS_LAB_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_LAB_EMAIL || '' }}
+          HIMS_LAB_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_LAB_PASSWORD || '' }}
+          HIMS_RADIOLOGY_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_RADIOLOGY_EMAIL || '' }}
+          HIMS_RADIOLOGY_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_RADIOLOGY_PASSWORD || '' }}
+          HIMS_PHARMACY_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_PHARMACY_EMAIL || '' }}
+          HIMS_PHARMACY_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_PHARMACY_PASSWORD || '' }}
+          HIMS_FINANCE_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_FINANCE_EMAIL || '' }}
+          HIMS_FINANCE_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_FINANCE_PASSWORD || '' }}
+          HIMS_HR_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_HR_EMAIL || '' }}
+          HIMS_HR_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_HR_PASSWORD || '' }}
+          HIMS_NURSE_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_NURSE_EMAIL || '' }}
+          HIMS_NURSE_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_NURSE_PASSWORD || '' }}
+          HIMS_HOSPITAL_ADMIN_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_HOSPITAL_ADMIN_EMAIL || '' }}
+          HIMS_HOSPITAL_ADMIN_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_HOSPITAL_ADMIN_PASSWORD || '' }}
+          HIMS_SUPER_ADMIN_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_SUPER_ADMIN_EMAIL || '' }}
+          HIMS_SUPER_ADMIN_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_SUPER_ADMIN_PASSWORD || '' }}
         run: |
-          args=(--app "$APP_ONLY" --read-only)
+          # Always applied (with or without WORKFLOW_SPEC): a credential/config block or a CRITICAL NOT VERIFIED
+          # workflow must never produce a green job. Only intentionally unapproved drafts are tolerated (still reported).
+          args=(--app "$APP_ONLY" --read-only --fail-on-blocked --ignore-blocked unapproved --fail-on-critical-unverified)
+          if [[ "$FAIL_ON_INCOMPLETE" == "true" ]]; then args+=(--fail-on-incomplete); fi
           if [[ -n "$TEST_ENV" ]]; then args+=(--env "$TEST_ENV"); fi
           if [[ -n "$WORKFLOW_SPEC" ]]; then
             if [[ ! -f "$WORKFLOW_SPEC" ]]; then echo "::error::Missing workflow document $WORKFLOW_SPEC"; exit 1; fi
-            args+=(--spec "$WORKFLOW_SPEC" --fail-on-blocked --fail-on-incomplete)
+            args+=(--spec "$WORKFLOW_SPEC")
           fi
           python agent.py run "${args[@]}"
       - name: Redact and scan reports
         id: report_scan
         if: always()
+        env:
+          # Same values as the run step so the scanner can redact them from reports (it also learns them from the environment).
+          HIMS_LAB_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_LAB_EMAIL || '' }}
+          HIMS_LAB_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_LAB_PASSWORD || '' }}
+          HIMS_RADIOLOGY_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_RADIOLOGY_EMAIL || '' }}
+          HIMS_RADIOLOGY_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_RADIOLOGY_PASSWORD || '' }}
+          HIMS_PHARMACY_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_PHARMACY_EMAIL || '' }}
+          HIMS_PHARMACY_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_PHARMACY_PASSWORD || '' }}
+          HIMS_FINANCE_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_FINANCE_EMAIL || '' }}
+          HIMS_FINANCE_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_FINANCE_PASSWORD || '' }}
+          HIMS_HR_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_HR_EMAIL || '' }}
+          HIMS_HR_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_HR_PASSWORD || '' }}
+          HIMS_NURSE_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_NURSE_EMAIL || '' }}
+          HIMS_NURSE_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_NURSE_PASSWORD || '' }}
+          HIMS_HOSPITAL_ADMIN_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_HOSPITAL_ADMIN_EMAIL || '' }}
+          HIMS_HOSPITAL_ADMIN_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_HOSPITAL_ADMIN_PASSWORD || '' }}
+          HIMS_SUPER_ADMIN_EMAIL: ${{ matrix.app == 'hospital' && secrets.HIMS_SUPER_ADMIN_EMAIL || '' }}
+          HIMS_SUPER_ADMIN_PASSWORD: ${{ matrix.app == 'hospital' && secrets.HIMS_SUPER_ADMIN_PASSWORD || '' }}
         run: python agent.py scan-artifacts artifacts --fix
+      - name: Copy redacted report to the job summary (evidence survives an artifact-quota failure)
+        if: ${{ always() && steps.report_scan.outcome == 'success' }}
+        shell: bash
+        run: |
+          f=$(ls -t artifacts/reports/agent_report_*.md 2>/dev/null | head -n1 || true)
+          if [[ -n "$f" ]]; then { echo "### Agent report (${{ matrix.app }})"; echo; head -c 900000 "$f"; } >> "$GITHUB_STEP_SUMMARY"; fi
+      # Small, high-value reports (HTML + JSON + markdown) kept longer, in their own artifact so they are never lost
+      # together with bulky evidence. All files were redacted/scanned by the previous step.
       - uses: actions/upload-artifact@v4.4.3
         continue-on-error: true
         if: ${{ always() && steps.report_scan.outcome == 'success' }}
         with:
           name: agent-report-${{ matrix.app }}
-          path: artifacts/reports/
+          path: |
+            artifacts/reports/*.html
+            artifacts/reports/*.json
+            artifacts/reports/*.md
+          retention-days: 14
+          compression-level: 9
+          if-no-files-found: warn
+      # Bulky evidence (screenshots etc.): short retention to protect the storage quota; never excludes the reports above.
+      - uses: actions/upload-artifact@v4.4.3
+        continue-on-error: true
+        if: ${{ always() && steps.report_scan.outcome == 'success' }}
+        with:
+          name: agent-evidence-${{ matrix.app }}
+          path: |
+            artifacts/
+            !artifacts/reports/*.html
+            !artifacts/reports/*.json
+            !artifacts/reports/*.md
           retention-days: 3
+          compression-level: 9
           if-no-files-found: ignore
 
   agent-write:
