@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-005
+  app: hospital
+  title: Frontend RBAC utility
+  description: 'Auto-compiled from shared.yaml / SHR-005. Business assertions: Permission
+    decisions match backend policy'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Permission decisions match backend policy
+  sources:
+  - file: spec:shared.yaml#SHR-005
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-005
+    model: deterministic-fallback
+    source_sha256: 6119ec02f9cf801a5c6a8ef8cc1e301a78051ddd56c6e0782f85bef85bd4ffea
+    compiled: false
+    requires_human_approval: true
+  role: doctor

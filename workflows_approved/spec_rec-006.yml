@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_rec-006
+  app: hospital
+  title: Check in appointment
+  description: 'Auto-compiled from reception.yaml / REC-006. Business assertions:
+    Only valid booked patient transitions to checked in'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Only valid booked patient transitions to checked in
+  sources:
+  - file: spec:reception.yaml#REC-006
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/appointment/checkin
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-006
+    model: deterministic-fallback
+    source_sha256: 69829e72ad3ddc83d886fc1d3473da56252e086773c2a82a6bf38d3e13e2741a
+    compiled: false
+    requires_human_approval: true
+  role: reception

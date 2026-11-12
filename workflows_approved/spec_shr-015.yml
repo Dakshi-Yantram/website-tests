@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-015
+  app: hospital
+  title: Attachment access control
+  description: 'Auto-compiled from shared.yaml / SHR-015. Business assertions: Patient-bound
+    download only by permitted role'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Patient-bound download only by permitted role
+  sources:
+  - file: spec:shared.yaml#SHR-015
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-015
+    model: deterministic-fallback
+    source_sha256: 5da75b7f39aa0dea8dfb8c89bfecb0b74459c02bee83b0e18dca96cb574a4bf4
+    compiled: false
+    requires_human_approval: true
+  role: doctor

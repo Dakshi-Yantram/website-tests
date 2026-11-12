@@ -1,0 +1,37 @@
+# The five end-to-end flows that used to be hard-coded in tests/test_07_workflows.py (WORKFLOWS list).
+# Same fields, same behaviour: tests/test_07_workflows.py now reads this file. They are data for the legacy pytest
+# phase ("python run.py --phase workflows"); the approval-gated engine uses workflows.yml instead.
+# `nav` entries are regular expressions matched against visible menu / link / button names.
+version: 1
+legacy_workflows:
+  - id: reception_patient_registration
+    role: reception
+    title: "Reception: register patient and find them again"
+    nav: ["OPD", "patient|registration|register"]
+    create: "register|new patient|add patient|create|\\+"
+    write: true
+  - id: reception_appointment
+    role: reception
+    title: "Reception: create appointment / OPD encounter"
+    nav: ["OPD", "appointment|encounter|visit|queue"]
+    create: "new appointment|book|schedule|create|add|\\+"
+    write: true
+  - id: doctor_open_record
+    role: doctor
+    title: "Doctor: view patients and open a record, then reopen"
+    nav: ["OPD", "appointment|patient|queue|consult"]
+    write: false
+    open_first_row: true
+  - id: nurse_assignments_visits_docs
+    role: nurse
+    title: "Nurse: Workspace -> Assignments -> Visits -> Documentation"
+    nav: ["Assignments", "Visits", "Documentation"]
+    write: false
+    each_nav_is_page: true
+  - id: consumer_booking
+    role: consumer
+    title: "Consumer: browse care packages and start a booking"
+    nav: ["care package|package|service"]
+    create: "book|select|add to cart|enrol|subscribe|choose"
+    write: true
+    payment: true

@@ -1,0 +1,24 @@
+# Editable semantic specification. Read by the AI compiler; NOT executable by itself.
+# IMPORTANT: use the web route for the Nurse Connect web application. Native Android/iOS
+# journeys require a separate mobile testing adapter; this Playwright runner cannot test them.
+schema_version: nurseconnect.agent.workflow.v1
+application: nurseconnect
+workflows:
+  - id: NC-BKG-001
+    role: consumer
+    priority: P1
+    objective: "A customer can view the available care packages and booking choices"
+    write_test: false
+    source_anchors:
+      - /consumer
+    preconditions:
+      - "Use a synthetic Nurse Connect staging consumer account"
+      - "No payment, notification, or production writes"
+    steps:
+      - action: navigate_or_call
+        description: "Open the care packages or booking page and inspect available choices"
+    assertions:
+      - description: "The customer can see care package names and available scheduling controls"
+      - description: "The page does not display a fatal browser error"
+    negative_and_boundary_tests:
+      - "The interface handles no available slots without crashing"

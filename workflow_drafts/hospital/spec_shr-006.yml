@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-006
+  app: hospital
+  title: PHI-safe logging
+  description: 'Auto-compiled from shared.yaml / SHR-006. Business assertions: No
+    patient information in console/report/error text'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - No patient information in console/report/error text
+  sources:
+  - file: spec:shared.yaml#SHR-006
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-006
+    model: deterministic-fallback
+    source_sha256: 8c71ad5d2f971155c516a189df8d5fd0b21f2034f2ededfd91b54bc985ea8c54
+    compiled: false
+    requires_human_approval: true
+  role: doctor

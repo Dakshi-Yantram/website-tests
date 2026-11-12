@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_lab-001
+  app: hospital
+  title: Laboratory order lifecycle
+  description: 'Auto-compiled from lab.yaml / LAB-001. Business assertions: Ordered
+    test listed; accession/collection/status/result aligned'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Ordered test listed
+  - accession/collection/status/result aligned
+  sources:
+  - file: spec:lab.yaml#LAB-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/pathology/orderManagement
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: LAB-001
+    model: deterministic-fallback
+    source_sha256: 5650a6da7dc48148cd98604010e4e1222389ea292e5ea115c80eeadfd5ad7a59
+    compiled: false
+    requires_human_approval: true
+  role: lab

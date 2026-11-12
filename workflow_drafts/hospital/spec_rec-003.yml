@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_rec-003
+  app: hospital
+  title: Create IPD admission
+  description: 'Auto-compiled from reception.yaml / REC-003. Business assertions:
+    Patient linked to correct admission; bed/ward state consistent'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Patient linked to correct admission
+  - bed/ward state consistent
+  sources:
+  - file: spec:reception.yaml#REC-003
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/ipd
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-003
+    model: deterministic-fallback
+    source_sha256: c9a11f7182e2e0afa5833bcaf910d37c16d0adffaf8ed80908199a67cc66c0e3
+    compiled: false
+    requires_human_approval: true
+  role: reception

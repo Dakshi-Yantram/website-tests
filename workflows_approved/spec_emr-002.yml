@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_emr-002
+  app: hospital
+  title: Emergency admission to IPD
+  description: 'Auto-compiled from emergency.yaml / EMR-002. Business assertions:
+    Linked emergency to IPD timeline once; existing case retained'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Linked emergency to IPD timeline once
+  - existing case retained
+  sources:
+  - file: spec:emergency.yaml#EMR-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: EMR-002
+    model: deterministic-fallback
+    source_sha256: 64895e42159662820d442e8f6fae17f26141200bf6afd420cf97ac8a82be66c3
+    compiled: false
+    requires_human_approval: true
+  role: doctor

@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_rec-005
+  app: hospital
+  title: Book appointment
+  description: 'Auto-compiled from reception.yaml / REC-005. Business assertions:
+    Doctor/time selection persisted; appointment accessible after refresh'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Doctor/time selection persisted
+  - appointment accessible after refresh
+  sources:
+  - file: spec:reception.yaml#REC-005
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/appointment
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-005
+    model: deterministic-fallback
+    source_sha256: b85f6ea8ca0f02b15d59be14feb77b8e12b1b0dcfd9a4b43f7f531540cd6763a
+    compiled: false
+    requires_human_approval: true
+  role: reception

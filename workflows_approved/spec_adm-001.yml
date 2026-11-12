@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_adm-001
+  app: hospital
+  title: Hospital admin management
+  description: 'Auto-compiled from admin.yaml / ADM-001. Business assertions: User/role/department
+    updates saved and audited'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - User/role/department updates saved and audited
+  sources:
+  - file: spec:admin.yaml#ADM-001
+  steps:
+  - action: goto
+    path: /admin
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: ADM-001
+    model: deterministic-fallback
+    source_sha256: 6fc9da2f917a444939ee77adf4bd8c4f9f3042ca98625a4e3823b64cd2ff273e
+    compiled: false
+    requires_human_approval: true
+  role: hospital_admin

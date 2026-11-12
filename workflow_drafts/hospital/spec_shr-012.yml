@@ -1,0 +1,33 @@
+version: 1
+workflows:
+- id: spec_shr-012
+  app: hospital
+  title: Pagination and sort validation
+  description: 'Auto-compiled from shared.yaml / SHR-012. Business assertions: Bounded
+    page/limit; stable ordering'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Bounded page/limit
+  - stable ordering
+  sources:
+  - file: spec:shared.yaml#SHR-012
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-012
+    model: deterministic-fallback
+    source_sha256: 269cc0a20190a0f12ea690fc45998c9606a501db8e0885f638f08a9bb91caba7
+    compiled: false
+    requires_human_approval: true
+  role: doctor
