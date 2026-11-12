@@ -14,7 +14,7 @@
   python agent.py check-approvals                CI approval gate
   python agent.py scan-artifacts DIR [--fix]     redact + fail-closed scan of reports before upload
 
-Exit codes: 0 ok | 1 test FAIL | 2 invalid input/config | 3 sensitive data withheld a report | 4 blocked (with --fail-on-blocked)
+Exit codes: 0 ok | 1 test FAIL | 2 invalid input/config | 3 sensitive data withheld a report | 4 blocked by credentials/environment (with --fail-on-blocked) | 5 incomplete | 6 critical NOT VERIFIED
 """
 import argparse
 import json
@@ -75,6 +75,16 @@ def cmd_validate(a):
         except SchemaError as e:
             problems += 1
             say("ERROR cross-file check: " + "; ".join(e.problems))
+        try:
+            from qa_agent import verdict
+            for p in verdict.check_known_ids(load_all()):
+                problems += 1
+                say(f"ERROR config/critical_workflows.yml: {p}")
+        except verdict.CriticalConfigError as e:
+            problems += 1
+            say(f"ERROR config/critical_workflows.yml: {e}")
+        except SchemaError:
+            pass     # already reported by the cross-file check above
         audit = ApprovalStore().verify_audit()
         for p in audit:
             problems += 1
@@ -468,13 +478,12 @@ def cmd_run(a):
     for r in results:
         say(f"  {r.status:12} {r.id}" + (f"  - {r.reason}" if r.reason and r.status != "PASS" else ""))
     say(f"Reports: {paths['html']}")
-    if s["FAIL"]:
-        return 1
-    if a.fail_on_blocked and s["BLOCKED"]:
-        return 4
-    if getattr(a, 'fail_on_incomplete', False) and (s['NOT VERIFIED'] or s['NOT TESTED']):
-        return 5
-    return 0
+    from qa_agent import verdict
+    return verdict.finish(results, wfs, say=say, fail_on_blocked=a.fail_on_blocked,
+                          fail_on_incomplete=getattr(a, 'fail_on_incomplete', False),
+                          fail_on_critical_unverified=getattr(a, 'fail_on_critical_unverified', False),
+                          ignore_blocked=tuple(k for k in (getattr(a, 'ignore_blocked', '') or '').split(',') if k),
+                          apps=apps, selection=selection)
 
 
 def build_parser():
@@ -586,6 +595,8 @@ def build_parser():
     r.add_argument("--source", action="append", help="NAME=PATH of a checked-out repo whose git commit SHA is recorded in the report (repeatable; or QA_SOURCE_<NAME> env var)")
     r.add_argument("--fail-on-blocked", action="store_true")
     r.add_argument("--fail-on-incomplete", action="store_true", help="exit nonzero when NOT VERIFIED or NOT TESTED workflows remain")
+    r.add_argument("--ignore-blocked", default="", help="comma list of block kinds --fail-on-blocked tolerates: credentials,unapproved,policy,other (default: none)")
+    r.add_argument("--fail-on-critical-unverified", action="store_true", help="exit 6 when a critical workflow (config/critical_workflows.yml or risk high) is NOT VERIFIED")
     r.add_argument("--report-dir")
     r.add_argument("--drafts-dir", default=str(DRAFTS_DIR))
     r.set_defaults(fn=cmd_run)
