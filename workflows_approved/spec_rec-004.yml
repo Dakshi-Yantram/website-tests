@@ -17,7 +17,7 @@ workflows:
   - file: spec:reception.yaml#REC-004
   steps:
   - action: goto
-    path: /hospital-dashboard/reception/emergency
+    path: /hospital-dashboard/reception/addPatient/emergency
     expected: Route responds
   - action: expect_visible
     target:
