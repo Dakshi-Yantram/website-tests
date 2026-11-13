@@ -277,7 +277,7 @@ jobs:
             artifacts/reports/*.html
             artifacts/reports/*.json
             artifacts/reports/*.md
-          retention-days: 1
+          retention-days: 7
           compression-level: 9
           if-no-files-found: warn
       # Bulky evidence (screenshots etc.): short retention to protect the storage quota; never excludes the reports above.
