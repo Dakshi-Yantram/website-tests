@@ -497,19 +497,19 @@
     },
     "spec_rec-003": {
       "app": "hospital",
-      "approved_at": "2026-11-13T11:44:56+00:00",
+      "approved_at": "2026-11-13T11:47:23+00:00",
       "approved_by": "Dakshi",
-      "hash": "c56161fcc48920f0c88abf2fa8c9c1706d07e9f60b15c65b628a9add614911d7",
-      "reason": "Fixed guessed route to /reception/addPatient/ipd. Read-only, no writes.",
+      "hash": "b504e45961b9759ddbab7a994883a0c022301056130187296f956d4de1b4b54d",
+      "reason": "Replaced placeholder with real read-only form-render checks (IPD). No writes.",
       "risk": "high",
       "writes": false
     },
     "spec_rec-004": {
       "app": "hospital",
-      "approved_at": "2026-11-13T11:44:57+00:00",
+      "approved_at": "2026-11-13T11:47:24+00:00",
       "approved_by": "Dakshi",
-      "hash": "1472eb2c1130c7c37c86c3a0572636e31f6cc86c93591e34c40ef5321c622574",
-      "reason": "Fixed guessed route to /reception/addPatient/emergency. Read-only, no writes.",
+      "hash": "ca3a225d540bfec7b1fbcafec0642b6c85425c177d1a0ad8a813103c1f11e7be",
+      "reason": "Replaced placeholder with real read-only form-render checks (Emergency). No writes.",
       "risk": "high",
       "writes": false
     },
