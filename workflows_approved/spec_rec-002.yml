@@ -19,15 +19,17 @@ workflows:
   - file: spec:reception.yaml#REC-002
   steps:
   - action: goto
-    path: /hospital-dashboard/reception/opd
-    expected: Route responds
-  - action: expect_visible
-    target:
-      css: body
-    expected: Page renders
+    path: /hospital-dashboard/reception/addPatient/opd
+    expected: OPD registration route responds (route confirmed by the legacy test and the Add patient menu)
+  - action: expect_url
+    contains: /addPatient/opd
+    expected: Not redirected to login or another page
+  - action: expect_text
+    contains: OPD Registration
+    expected: The OPD registration form is shown
   - action: require_verified
-    reason: Source specification provides no executable assertion selectors; configure
-      AI compilation and staging UI evidence
+    reason: Only that the OPD form opens is verified here; creating the encounter, the OPD timeline and the queue
+      listing still have no executable assertions
     expected: Business assertions need a real UI or API verification
   - action: expect_no_writes_sent
     expected: No business write request was sent
