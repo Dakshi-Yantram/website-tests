@@ -128,7 +128,7 @@ workflows:
     expected_outcome: [A booking entry point exists, No booking or payment is made]
     steps:
       - {action: open_section, pattern: 'care package|package|service', expected: Care packages open}
-      - {action: click, target: {role: button, name: Book}, expected: Booking step opens, optional: true}
+      - {action: click, target: {role: link, name: Book}, expected: Booking step opens, optional: true}
       - {action: expect_authenticated, expected: Still signed in}
       - {action: expect_no_writes_sent, expected: Nothing was created}
 

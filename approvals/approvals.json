@@ -2,10 +2,10 @@
   "approvals": {
     "consumer_booking_flow_readonly": {
       "app": "nurseconnect",
-      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_at": "2026-11-13T09:24:13+00:00",
       "approved_by": "Dakshi",
-      "hash": "7c76073a63ffa9efce22f5de0300e3a3d2d40ad7d282929f88d08c6af79386b2",
-      "reason": "Reviewed; booking flow stops before creating a booking",
+      "hash": "11a7ff17e23065ca8b504802b9a39ad13e21455c5a13c17a917564ce85ebe0fb",
+      "reason": "Fixed selector: booking entry point is a link, not a button. Read-only, no writes.",
       "risk": "medium",
       "writes": false
     },
