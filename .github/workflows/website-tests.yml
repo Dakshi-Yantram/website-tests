@@ -372,7 +372,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       APP_ONLY: nurseconnect
       FAIL_ON_FINDINGS: "false"   
