@@ -5,7 +5,7 @@ workflows:
   title: Neonatal OPD registration
   description: 'Auto-compiled from reception.yaml / REC-010. Business assertions:
     Newborn demographics correctly linked'
-  status: approved
+  status: draft
   risk: high
   writes: false
   preconditions:
