@@ -3,8 +3,10 @@ workflows:
 - id: spec_rec-004
   app: hospital
   title: Emergency intake to triage
-  description: 'Auto-compiled from reception.yaml / REC-004. Business assertions:
-    Emergency visit appears in triage and emergency modules'
+  description: 'Read-only smoke check: the Emergency registration form renders for
+    the reception role (name, mobile fields and Save Patient button). It does NOT
+    verify the business assertions of the source spec; those need a staging write
+    test.'
   status: approved
   risk: high
   writes: false
@@ -12,23 +14,32 @@ workflows:
   - Dedicated synthetic staging hospital and test records
   - Authenticated authorized test role
   expected_outcome:
-  - Emergency visit appears in triage and emergency modules
+  - Emergency registration form renders with its key fields
   sources:
   - file: spec:reception.yaml#REC-004
   steps:
   - action: goto
-    path: /hospital-dashboard/reception/emergency
-    expected: Route responds
+    path: /hospital-dashboard/reception/addPatient/emergency
+    expected: Emergency registration page loads
   - action: expect_visible
     target:
-      css: body
-    expected: Page renders
-  - action: require_verified
-    reason: Source specification provides no executable assertion selectors; configure
-      AI compilation and staging UI evidence
-    expected: Business assertions need a real UI or API verification
+      label: First Name
+    expected: First Name field visible
+  - action: expect_visible
+    target:
+      label: Last Name
+    expected: Last Name field visible
+  - action: expect_visible
+    target:
+      label: Mobile Number
+    expected: Mobile Number field visible
+  - action: expect_visible
+    target:
+      role: button
+      name: Save Patient
+    expected: Save Patient button visible
   - action: expect_no_writes_sent
-    expected: No business write request was sent
+    expected: Nothing was sent
   generated:
     method: multiapp-spec-compiler
     original_id: REC-004

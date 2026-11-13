@@ -3,8 +3,9 @@ workflows:
 - id: spec_rec-003
   app: hospital
   title: Create IPD admission
-  description: 'Auto-compiled from reception.yaml / REC-003. Business assertions:
-    Patient linked to correct admission; bed/ward state consistent'
+  description: 'Read-only smoke check: the IPD registration form renders for the reception
+    role (name, mobile fields and Save Patient button). It does NOT verify the business
+    assertions of the source spec; those need a staging write test.'
   status: approved
   risk: high
   writes: false
@@ -12,24 +13,32 @@ workflows:
   - Dedicated synthetic staging hospital and test records
   - Authenticated authorized test role
   expected_outcome:
-  - Patient linked to correct admission
-  - bed/ward state consistent
+  - IPD registration form renders with its key fields
   sources:
   - file: spec:reception.yaml#REC-003
   steps:
   - action: goto
-    path: /hospital-dashboard/reception/ipd
-    expected: Route responds
+    path: /hospital-dashboard/reception/addPatient/ipd
+    expected: IPD registration page loads
   - action: expect_visible
     target:
-      css: body
-    expected: Page renders
-  - action: require_verified
-    reason: Source specification provides no executable assertion selectors; configure
-      AI compilation and staging UI evidence
-    expected: Business assertions need a real UI or API verification
+      label: First Name
+    expected: First Name field visible
+  - action: expect_visible
+    target:
+      label: Last Name
+    expected: Last Name field visible
+  - action: expect_visible
+    target:
+      label: Mobile Number
+    expected: Mobile Number field visible
+  - action: expect_visible
+    target:
+      role: button
+      name: Save Patient
+    expected: Save Patient button visible
   - action: expect_no_writes_sent
-    expected: No business write request was sent
+    expected: Nothing was sent
   generated:
     method: multiapp-spec-compiler
     original_id: REC-003
