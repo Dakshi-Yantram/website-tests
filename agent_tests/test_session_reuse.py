@@ -113,3 +113,12 @@ def test_other_login_failures_are_still_FAIL_and_are_retried(ctx):
     r, res = ctx.run(two(n=2), login_fn=login)
     assert [x.status for x in res] == ["FAIL", "FAIL"] and calls == ["nurse", "nurse"]
     assert r._sessions == {}                                          # a failed login is never cached
+
+
+def test_http_500_login_is_reported_once_then_blocked_not_retried(ctx):
+    """A server-side 500 on login must not be retried for every workflow (that ends in a 429 lockout)."""
+    calls = []
+    login = counting_login(calls, fail_with=lambda role: f"Login failed for role {role}: Unable to complete login (HTTP 500)")
+    r, res = ctx.run(two(n=3), login_fn=login)
+    assert [x.status for x in res] == ["FAIL", "BLOCKED", "BLOCKED"]
+    assert calls == ["nurse"]                                         # only ONE real login attempt for the role

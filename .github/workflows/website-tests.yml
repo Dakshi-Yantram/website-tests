@@ -32,6 +32,9 @@ on:
       confirm_write_ids:
         description: "Comma-separated workflow ids explicitly confirmed for writing (only used with allow_write)"
         default: ""
+      workflow_ids:
+        description: "agent-tests only: comma-separated workflow ids to run, e.g. spec_rec-001,spec_rec-002 (empty = run all). Much faster for debugging"
+        default: ""
 
 # Minimal token permissions for every job unless a job asks for less/more. No job needs more than read.
 permissions:
@@ -190,6 +193,7 @@ jobs:
       APP_ONLY: ${{ matrix.app }}
       FAIL_ON_INCOMPLETE: ${{ vars.AGENT_FAIL_ON_INCOMPLETE }}   # the ONLY switch for --fail-on-incomplete: 'true' = any NOT VERIFIED/NOT TESTED fails the job (default: only critical ones)
       WORKFLOW_SPEC: ${{ matrix.app == 'nurseconnect' && vars.NURSECONNECT_WORKFLOW_SPEC || vars.HOSPITAL_WORKFLOW_SPEC }}
+      WORKFLOW_IDS: ${{ github.event.inputs.workflow_ids }}      # optional: run only these workflow ids (empty = all)
       # Same login paths as the pytest jobs - without these the agent falls back to "/" and finds no password field.
       NURSECONNECT_LOGIN_PATH: ${{ vars.NURSECONNECT_LOGIN_PATH || '/auth/login' }}
       HOSPITAL_LOGIN_PATH: ${{ vars.HOSPITAL_LOGIN_PATH || '/login' }}
@@ -233,6 +237,10 @@ jobs:
           args=(--app "$APP_ONLY" --read-only --fail-on-blocked --ignore-blocked unapproved --fail-on-critical-unverified)
           if [[ "$FAIL_ON_INCOMPLETE" == "true" ]]; then args+=(--fail-on-incomplete); fi
           if [[ -n "$TEST_ENV" ]]; then args+=(--env "$TEST_ENV"); fi
+          if [[ -n "$WORKFLOW_IDS" ]]; then
+            IFS=',' read -ra ids <<< "$WORKFLOW_IDS"
+            for i in "${ids[@]}"; do args+=(--workflow "$(echo "$i" | tr -d ' ')"); done
+          fi
           if [[ -n "$WORKFLOW_SPEC" ]]; then
             if [[ ! -f "$WORKFLOW_SPEC" ]]; then echo "::error::Missing workflow document $WORKFLOW_SPEC"; exit 1; fi
             args+=(--spec "$WORKFLOW_SPEC")
