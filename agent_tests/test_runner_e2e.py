@@ -312,3 +312,15 @@ def test_screenshots_are_masked_by_default(ctx):
     assert shot.is_file() and shot.stat().st_size > 500
     r2, res2 = ctx.run([w], screenshot_mode="off")
     assert res2[0].steps[1].status == "NOT TESTED" and "SCREENSHOT_MODE=off" in res2[0].steps[1].error
+
+
+def test_expect_text_sees_a_toast_that_has_already_disappeared(ctx):
+    """Live validation toasts vanish after a few seconds; the runner records them so a later expect_text can still match."""
+    w = wf("toast_flow", app="hospital", steps=[
+        {"action": "goto", "path": "/toast"},
+        {"action": "guarded_submit", "target": SAVE},
+        {"action": "wait_for", "ms": 1200},                                         # toast (300 ms) is long gone from the DOM here
+        {"action": "expect_text", "matches": "please enter|required"},
+    ])
+    r, res = ctx.run([w])
+    assert res[0].status == "PASS", (res[0].status, res[0].reason)

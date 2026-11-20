@@ -8,13 +8,14 @@
   python agent.py approve --id ID --by NAME --reason TEXT           (approve a workflow already in workflows.yml)
   python agent.py revoke --id ID --by NAME --reason TEXT
   python agent.py inventory                      draft / approved / unapproved / changed + last result
+  python agent.py auto --app hospital            AUTONOMOUS: logs in, explores, tests, writes a bug report (no workflow files needed)
   python agent.py run --env NAME [--dry-run | --read-only] [--app A] [--workflow ID]
   python agent.py verify-env --env NAME --app A
   python agent.py preflight --env NAME --app A [--online] [--source frontend=PATH --source backend=PATH] [--json]
   python agent.py check-approvals                CI approval gate
   python agent.py scan-artifacts DIR [--fix]     redact + fail-closed scan of reports before upload
 
-Exit codes: 0 ok | 1 test FAIL | 2 invalid input/config | 3 sensitive data withheld a report | 4 blocked by credentials/environment (with --fail-on-blocked) | 5 incomplete | 6 critical NOT VERIFIED
+Exit codes: 0 ok | 1 test FAIL (auto: a bug at/above --fail-on) | 2 invalid input/config | 3 sensitive data withheld a report | 4 blocked by credentials/environment (auto: nothing could be tested) | 5 incomplete | 6 critical NOT VERIFIED
 """
 import argparse
 import json
@@ -483,7 +484,134 @@ def cmd_run(a):
                           fail_on_incomplete=getattr(a, 'fail_on_incomplete', False),
                           fail_on_critical_unverified=getattr(a, 'fail_on_critical_unverified', False),
                           ignore_blocked=tuple(k for k in (getattr(a, 'ignore_blocked', '') or '').split(',') if k),
-                          apps=apps, selection=selection)
+                          apps=apps, selection=selection, placeholders_as_gaps=getattr(a, 'placeholders_as_gaps', False))
+
+
+def cmd_auto(a):
+    """Autonomous read-only exploration: log in, discover, test, report. Needs only URLs (defaults are built in) and credentials in .env."""
+    from qa_agent import explore_report
+    from qa_agent.explorer import Explorer, ExploreConfig, SEV_RANK
+    try:
+        env = _make_env(a)
+    except SafetyBlocked as e:
+        say(f"BLOCKED (fail closed): {e}")
+        if a.env or os.getenv("TEST_ENV"):
+            return 2
+        env = None
+    apps = tuple(APPS) if a.app == "all" else (a.app,)
+    base_urls = {app: os.getenv(*LEGACY_URLS[app]) if os.getenv(LEGACY_URLS[app][0]) else LEGACY_URLS[app][1] for app in apps}
+    if env:
+        for app in apps:
+            if app in env.base_urls:
+                base_urls[app] = env.base_urls[app]
+    base_urls.update(kv_pairs(a.base_url, "--base-url"))
+    cfg = ExploreConfig(apps=apps, base_urls=base_urls, env=env, roles=tuple(a.role or ()), seed_paths=tuple(a.seed or ()),
+                        max_pages=a.max_pages, max_minutes=a.max_minutes, headless=not a.headed, browser=a.browser,
+                        screenshots=a.screenshots, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""),
+                        anonymous_check=not a.no_anonymous_check, cross_role_check=not a.no_cross_role_check,
+                        allow_read_post=tuple(a.allow_read_post or ()), login_retries=a.login_retries,
+                        fill=a.fill, video=a.video, confirm_phrase=os.getenv("STAGING_WRITE_CONFIRMATION", ""))
+    if a.fill and not env:
+        say("BLOCKED: --fill creates records and needs a declared staging environment: add --env <name> (see config/environments.yml)")
+        return 2
+    urls_txt = ", ".join(f"{k} ({v})" for k, v in base_urls.items())
+    if a.fill:
+        say(f"FILL MODE on a staging environment - records marked AUTOTEST_ will be created in: {urls_txt}")
+        say("DELETE requests and payment endpoints are blocked. This can take several minutes...")
+    else:
+        say(f"Autonomous read-only exploration of: {urls_txt}")
+    if not a.fill:
+        say("Nothing is created, changed or deleted: all write requests are blocked. This can take several minutes...")
+    try:
+        result = Explorer(cfg).run()
+    except SafetyBlocked as e:
+        say(f"BLOCKED (fail closed): {e}")
+        return 2
+    except Exception as e:                                   # never end silently: show what stopped the run
+        say(f"RUN STOPPED: {type(e).__name__}: {redact(str(e))[:400]}")
+        return 5
+    try:
+        paths = explore_report.write_reports(result, Path(a.report_dir) if a.report_dir else ART / "reports", ART / "reports" / "screenshots")
+    except SensitiveDataError as e:
+        say(f"REPORT WITHHELD (fail closed): {e}")
+        return 3
+    head, hint, why = explore_report.verdict(result)
+    counts = explore_report._sev_counts(result.findings)
+    say(f"Run {result.meta['run_id']}: " + ", ".join(f"{counts[s]} {s}" for s in counts))
+    for r in result.roles:
+        say(f"  {r.app}/{r.role}: {r.status}, {r.pages} page(s)" + (f" - {r.reason}" if r.reason else ""))
+    for f in result.findings[:15]:
+        if f.severity in ("High", "Medium"):
+            say(f"  {f.id} [{f.severity}] {f.title}")
+    say(f"Reports: {paths['html']}")
+    say(f"VERDICT: {head}")
+    if hint == "blocked":
+        say("Set the test-account variables in .env (see .env.example): e.g. RECEPTION_EMAIL / RECEPTION_PASSWORD for the hospital app.")
+        return 4
+    gate = SEV_RANK[a.fail_on.capitalize()]
+    return 1 if any(SEV_RANK[f.severity] <= gate for f in result.findings) else 0
+
+
+def cmd_login_check(a):
+    """Diagnose a login that fails or times out: shows what the agent finds on the page, what it clicks, and every network call."""
+    import config
+    from urllib.parse import urlsplit
+    from playwright.sync_api import sync_playwright
+    from qa_agent.explorer import ExplorerGuard
+    from qa_agent.safety import normalize_origin
+    from pages.login_page import EMAIL_SEL, PASS_SEL, SUBMIT_SEL
+    try:
+        env = _make_env(a)
+    except SafetyBlocked as e:
+        say(f"BLOCKED (fail closed): {e}")
+        return 2
+    base = (env.base_urls.get(a.app) if env else None) or config.APPS[a.app].base_url
+    role = config.ROLES.get(a.role) or config.AGENT_ROLES.get(a.role)
+    if not role or not role.email or not role.password:
+        say(f"No credentials for role '{a.role}': set its email and password variables in .env")
+        return 4
+    from qa_agent.redaction import register_secret
+    register_secret(role.password)
+    url = base.rstrip("/") + config.APPS[a.app].login_path
+    say(f"Opening {url} as role '{a.role}' (read-only guard on; environment: {env.name if env else 'none'})")
+    with sync_playwright() as pw:
+        kw = {}
+        if os.getenv("QA_CHROMIUM_PATH"):
+            kw["executable_path"] = os.getenv("QA_CHROMIUM_PATH")
+        br = pw.chromium.launch(headless=not a.headed, **kw)
+        ctx = br.new_context(viewport={"width": 1440, "height": 900}, service_workers="block")
+        guard = ExplorerGuard(env, normalize_origin(base), writes_enabled=False, auth_any_origin=True)
+        guard.attach(ctx)
+        pg = ctx.new_page()
+        pg.on("request", lambda r: r.method != "GET" and say(f"  -> {r.method} {urlsplit(r.url).netloc}{urlsplit(r.url).path[:70]}"))
+        pg.on("response", lambda r: r.request.method != "GET" and say(f"  <- {r.status} {r.request.method} {urlsplit(r.url).netloc}{urlsplit(r.url).path[:70]}"))
+        pg.on("requestfailed", lambda r: say(f"  !! request failed: {r.method} {urlsplit(r.url).netloc}{urlsplit(r.url).path[:70]} ({r.failure})"))
+        pg.on("console", lambda m: m.type == "error" and say(f"  console error: {m.text[:160]}"))
+        pg.goto(url, wait_until="domcontentloaded", timeout=45000)
+        pg.wait_for_timeout(2500)
+        say(f"Page title: {pg.title()!r}; final address: {urlsplit(pg.url).path}")
+        for name, sel in (("email field", EMAIL_SEL), ("password field", PASS_SEL), ("submit button", SUBMIT_SEL)):
+            loc = pg.locator(sel)
+            n = loc.count()
+            first = ""
+            if n:
+                try:
+                    first = loc.first.evaluate("e => (e.tagName + ' type=' + (e.getAttribute('type')||'-') + ' text=' + (e.innerText||e.value||e.placeholder||'').trim().slice(0,40))")
+                except Exception:
+                    pass
+            say(f"  {name}: {n} match(es); the agent would use the FIRST: {first}")
+        try:
+            pg.locator(EMAIL_SEL).first.fill(role.email)
+            pg.locator(PASS_SEL).first.fill(role.password)
+            pg.locator(SUBMIT_SEL).first.click(timeout=5000)
+        except Exception as e:
+            say(f"  could not fill/click: {type(e).__name__}: {str(e).splitlines()[0][:160]}")
+        pg.wait_for_timeout(int(a.wait) * 1000)
+        shown = pg.evaluate("() => Array.from(document.querySelectorAll('[role=alert],[class*=error i],[class*=toast i],[class*=alert i]')).map(e => e.innerText.trim()).filter(Boolean).slice(0,4)")
+        say(f"Now at: {urlsplit(pg.url).path}; messages on screen: {shown}")
+        say("Blocked by the agent's own guard: " + (", ".join(guard.blocked[:5]) if guard.blocked else "nothing"))
+        br.close()
+    return 0
 
 
 def build_parser():
@@ -577,6 +705,41 @@ def build_parser():
     ve.add_argument("--env-file")
     ve.set_defaults(fn=cmd_verify_env)
 
+    au = sub.add_parser("auto", help="AUTONOMOUS read-only exploration: logs in as every configured role, explores, tests, writes a bug report")
+    au.add_argument("--app", choices=list(APPS) + ["all"], default="all")
+    au.add_argument("--role", action="append", help="only this role (repeatable); default: every role whose credentials are in .env / the environment")
+    au.add_argument("--env", help="environment from config/environments.yml (or TEST_ENV); optional")
+    au.add_argument("--env-file")
+    au.add_argument("--base-url", action="append", help="APP=URL override")
+    au.add_argument("--seed", action="append", help="extra start path to visit, e.g. /hospital-dashboard/admin/addstaff (repeatable)")
+    au.add_argument("--max-pages", type=int, default=40, help="pages per role (default 40)")
+    au.add_argument("--max-minutes", type=float, default=10.0, help="time budget per role (default 10)")
+    au.add_argument("--headed", action="store_true", help="show the browser")
+    au.add_argument("--browser", choices=["chromium", "firefox", "webkit"], default="chromium")
+    au.add_argument("--screenshots", choices=["auto", "off", "masked"], default="auto",
+                    help="auto = masked on declared staging/local, off otherwise (patient-data policy); masked = force masked screenshots")
+    au.add_argument("--fail-on", choices=["high", "medium", "low", "info"], default="high", help="exit 1 when a finding of this severity or worse exists (default high)")
+    au.add_argument("--no-anonymous-check", action="store_true", help="skip the 'can a logged-out visitor open this page' check")
+    au.add_argument("--no-cross-role-check", action="store_true", help="skip the 'can another role open this page' check")
+    au.add_argument("--allow-read-post", action="append", metavar="REGEX",
+                    help="path regex of POST endpoints YOU know are read-only (list/search). Default: every non-GET request is blocked. Repeatable")
+    au.add_argument("--video", action="store_true",
+                    help="record a video of each role's session (staging/local only); saved next to the report in a 'videos' folder")
+    au.add_argument("--fill", action="store_true",
+                    help="STAGING ONLY: also fill forms with synthetic AUTOTEST_ data and save them. Needs --env <staging>, STAGING_WRITE_CONFIRMATION, and passes the same write gate as `run --allow-write`")
+    au.add_argument("--login-retries", type=int, default=1, help="extra login attempts after an HTTP 5xx (default 1; 0 = none). Rejected passwords are never retried")
+    au.add_argument("--report-dir")
+    au.set_defaults(fn=cmd_auto)
+
+    lc = sub.add_parser("login-check", help="diagnose a failing login: shows the fields/button the agent finds and every network call")
+    lc.add_argument("--app", choices=list(APPS), required=True)
+    lc.add_argument("--role", required=True, help="e.g. nurse or consumer")
+    lc.add_argument("--env")
+    lc.add_argument("--env-file")
+    lc.add_argument("--headed", action="store_true")
+    lc.add_argument("--wait", type=int, default=15, help="seconds to watch after clicking Login")
+    lc.set_defaults(fn=cmd_login_check)
+
     r = sub.add_parser("run", help="run APPROVED workflows")
     r.add_argument("--app", choices=list(APPS) + ["all"], default="all")
     r.add_argument("--env", help="environment from config/environments.yml (or TEST_ENV)")
@@ -597,6 +760,9 @@ def build_parser():
     r.add_argument("--fail-on-incomplete", action="store_true", help="exit nonzero when NOT VERIFIED or NOT TESTED workflows remain")
     r.add_argument("--ignore-blocked", default="", help="comma list of block kinds --fail-on-blocked tolerates: credentials,unapproved,policy,other (default: none)")
     r.add_argument("--fail-on-critical-unverified", action="store_true", help="exit 6 when a critical workflow (config/critical_workflows.yml or risk high) is NOT VERIFIED")
+    r.add_argument("--placeholders-as-gaps", action="store_true",
+                   help="workflows whose only non-PASS step is a 'require_verified' placeholder (compiled from a spec with no selectors) are reported as a COVERAGE GAP "
+                        "instead of failing the critical gate. They still verify nothing - use `agent.py auto` for real coverage")
     r.add_argument("--report-dir")
     r.add_argument("--drafts-dir", default=str(DRAFTS_DIR))
     r.set_defaults(fn=cmd_run)
