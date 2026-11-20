@@ -20,10 +20,10 @@
     },
     "hospital_opd_registration_validation": {
       "app": "hospital",
-      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_at": "2026-11-20T07:35:58+00:00",
       "approved_by": "Dakshi",
-      "hash": "26a5304c382a96048d92bcaeb14ab2cf75326e75b9f28521fa9c54defb286421",
-      "reason": "Reviewed; validation test with writes blocked",
+      "hash": "69865439402c41ffd9c2b24c085281812667359804da656db17ba31fc02f5f08",
+      "reason": "Validation text matches live toast",
       "risk": "low",
       "writes": false
     },

@@ -105,12 +105,14 @@ workflows:
     writes: false
     role: reception
     preconditions: [RECEPTION_EMAIL / RECEPTION_PASSWORD set for a test account]
-    expected_outcome: [No patient is created, A required-field message appears]
+    expected_outcome: [No patient is created, A validation message appears]
     steps:
       - {action: goto, path: /hospital-dashboard/reception/addPatient/opd, expected: Form page loads}
       - {action: expect_visible, target: {label: First Name}, expected: First Name field visible}
       - {action: guarded_submit, target: {role: button, name: Save Patient}, expected: Submit attempted with writes blocked}
-      - {action: expect_text, matches: required, expected: A 'required' message is shown, severity: Low, optional: true}
+      # The live form answers with a toast such as "Please enter patient name." (seen 2026-11-20), not the word "required".
+      # Any of the usual validation phrasings counts; toasts that vanish before the check are still seen (runner records them).
+      - {action: expect_text, matches: 'please enter|please select|required|invalid|must be|cannot be (empty|blank)|is mandatory', expected: A validation message is shown, severity: Low}
       - {action: expect_no_writes_sent, expected: Nothing was sent}
 
   # ------------------------------------------------------------------------------------------------ BOOKING FLOW

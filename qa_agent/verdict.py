@@ -77,13 +77,24 @@ def is_critical(wf: dict | None, critical=None) -> bool:
     return wf.get("risk") in levels or wf.get("id") in ids
 
 
-def analyse(results, workflows, critical=None, apps=None, selection=()) -> dict:
+def is_placeholder(r) -> bool:
+    """True when the ONLY thing keeping a workflow from PASS is a `require_verified` step: a spec that was compiled without any
+    selectors/assertions. Such a workflow verifies nothing, whatever its other steps did."""
+    if getattr(r, "status", "") != "NOT VERIFIED":
+        return False
+    steps = getattr(r, "steps", None) or []
+    nv = [s for s in steps if s.status == "NOT VERIFIED"]
+    return bool(nv) and all(s.action == "require_verified" for s in nv) and not any(s.status in ("FAIL", "BLOCKED") for s in steps)
+
+
+def analyse(results, workflows, critical=None, apps=None, selection=(), placeholders_as_gaps=False) -> dict:
     """apps/selection describe what the run was asked to execute: every critical workflow of those apps must have a result
     (a critical workflow that was skipped or never executed is reported in `missing_critical`; explicit --workflow filters opt out)."""
     by_id = {w["id"]: w for w in workflows}
     crit = critical if critical is not None else load_critical()
     out = {"blocked": {"credentials": [], "unapproved": [], "policy": [], "other": []},
-           "critical_unverified": [], "critical_blocked": [], "missing_critical": [], "unverified": [], "failed": [], "passed": 0, "total": len(results)}
+           "critical_unverified": [], "critical_blocked": [], "missing_critical": [], "unverified": [], "failed": [], "passed": 0, "total": len(results),
+           "placeholders": []}
     if apps is not None and not selection:
         seen = {r.id for r in results}
         out["missing_critical"] = sorted(w["id"] for w in workflows if w.get("app") in apps and is_critical(w, crit) and w["id"] not in seen)
@@ -96,6 +107,8 @@ def analyse(results, workflows, critical=None, apps=None, selection=()) -> dict:
             out["blocked"][block_kind(r.reason)].append(r.id)
             if is_critical(by_id.get(r.id), crit):
                 out["critical_blocked"].append(r.id)
+        elif placeholders_as_gaps and is_placeholder(r):
+            out["placeholders"].append(r.id)          # explicit, visible coverage gap - not a failure, not a pass
         elif r.status in ("NOT VERIFIED", "NOT TESTED"):
             out["unverified"].append(r.id)
             if is_critical(by_id.get(r.id), crit):
@@ -123,16 +136,23 @@ def decide_exit(a: dict, *, fail_on_blocked=False, fail_on_incomplete=False, fai
 
 def verdict_lines(a: dict, code: int) -> list:
     b = a["blocked"]
+    gaps = a.get("placeholders", [])
+    real = a["total"] - len(gaps)
     if a["failed"]:
         head = "FAILED"
     elif a["passed"] == a["total"] and a["total"] and not a["missing_critical"]:
         head = "PASSED"
+    elif gaps and a["passed"] == real and real and not a["missing_critical"] and not a["unverified"] and not any(a["blocked"].values()):
+        head = "PASSED WITH COVERAGE GAP"
     else:
         head = "NOT FULLY TESTED"
     lines = [f"VERDICT: {head} - {a['passed']} of {a['total']} workflow(s) actually verified (PASS); exit code {code}",
              f"  FAIL={len(a['failed'])}  NOT VERIFIED/NOT TESTED={len(a['unverified'])} (critical: {len(a['critical_unverified'])})",
              f"  BLOCKED: missing credentials/config={len(b['credentials'])}, unapproved draft={len(b['unapproved'])}, "
              f"policy (read-only/write guard)={len(b['policy'])}, other={len(b['other'])}"]
+    if gaps:
+        lines.append(f"  COVERAGE GAP: {len(gaps)} placeholder workflow(s) have NO executable assertions and verified nothing: " + ", ".join(gaps[:25])
+                     + (" ..." if len(gaps) > 25 else "") + "  -> run `python agent.py auto` for real coverage, or write assertions for them")
     if a["missing_critical"]:
         lines.append("  CRITICAL NOT EXECUTED (no result at all): " + ", ".join(a["missing_critical"][:25]) + (" ..." if len(a["missing_critical"]) > 25 else ""))
     if a["critical_blocked"]:
@@ -143,7 +163,7 @@ def verdict_lines(a: dict, code: int) -> list:
 
 
 def finish(results, workflows, *, say, fail_on_blocked=False, fail_on_incomplete=False, fail_on_critical_unverified=False,
-           ignore_blocked=(), apps=None, selection=(), critical_path=None) -> int:
+           ignore_blocked=(), apps=None, selection=(), critical_path=None, placeholders_as_gaps=False) -> int:
     try:
         critical = load_critical(critical_path)
     except CriticalConfigError as e:
@@ -152,7 +172,7 @@ def finish(results, workflows, *, say, fail_on_blocked=False, fail_on_incomplete
             return 2
         say(f"WARNING: {e}; using default risk levels {DEFAULT_CRITICAL_RISK} only")
         critical = (DEFAULT_CRITICAL_RISK, frozenset())
-    a = analyse(results, workflows, critical=critical, apps=apps, selection=selection)
+    a = analyse(results, workflows, critical=critical, apps=apps, selection=selection, placeholders_as_gaps=placeholders_as_gaps)
     code = decide_exit(a, fail_on_blocked=fail_on_blocked, fail_on_incomplete=fail_on_incomplete,
                        fail_on_critical_unverified=fail_on_critical_unverified, ignore_blocked=ignore_blocked)
     lines = verdict_lines(a, code)

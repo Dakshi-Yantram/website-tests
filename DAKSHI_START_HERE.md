@@ -1,3 +1,7 @@
+## Autonomous mode (start here)
+
+`python agent.py auto --app hospital --headed` logs in, explores, tests and writes a bug report by itself. See `docs/AUTONOMOUS_AGENT.md`.
+
 ## Multi-app compiler update
 
 The semantic compiler now supports both applications. **Read `docs/MULTI_APP_COMPILER_HANDOFF.md` first.** Keep document `application` aligned with its source checkout (`apps/nurseconnect` or `apps/hospital`), and use `--refresh` after changes; do not auto-approve generated clinical writes.
