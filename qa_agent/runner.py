@@ -101,9 +101,26 @@ def default_login(page, role_name: str, base_url: str):
     login_path = config.APPS[role.app].login_path if role.app in config.APPS else "/"
     lp = LoginPage(page, base_url.rstrip("/") + login_path, role.landing_prefix)
     lp.open()
-    res = lp.submit(role.email, role.password)
-    if not res.ok:
-        raise AssertionError(f"Login failed for role {role_name}: {redact(res.error) or res.reason} (HTTP {res.api_status or 'n/a'})")
+    # A server-side failure (HTTP 5xx / nothing answered) is retried a couple of times with a growing pause: it is often a restarting or
+    # briefly overloaded backend. A credential rejection (401/403/422) or a 429 is NEVER retried (it would only risk locking the account).
+    retries = int(os.getenv("QA_LOGIN_RETRIES", "2"))
+    wait_s = float(os.getenv("QA_LOGIN_RETRY_WAIT_S", "4"))
+    attempt = 0
+    while True:
+        attempt += 1
+        res = lp.submit(role.email, role.password)
+        if res.ok:
+            return
+        transient = res.api_status >= 500 or (res.api_status == 0 and res.reason == "timeout")
+        if not transient or attempt > retries:
+            break
+        time.sleep(wait_s * attempt)
+        try:
+            lp.open()
+        except Exception:
+            pass
+    raise AssertionError(f"Login failed for role {role_name}: {redact(res.error) or res.reason} (HTTP {res.api_status or 'n/a'})"
+                         + (f" after {attempt} attempts" if attempt > 1 else ""))
 
 
 class _Lock:
@@ -567,6 +584,11 @@ class Runner:
             loc = self.locator(page, st["target"])
             self._require_found(loc, st["target"], timeout)
             self._check_not_dangerous(loc, st["target"])
+            try:    # remember short-lived messages (toasts disappear after a few seconds) so a later expect_text can still see them
+                from .explorer import OBSERVER_JS
+                page.evaluate(OBSERVER_JS)
+            except Exception:
+                pass
             if a == "guarded_submit":
                 before_blocked = len(guard.blocked)
                 guard.block_all = True
@@ -651,6 +673,11 @@ class Runner:
                     txt = self.locator(page, st["target"]).inner_text(timeout=1000)
                 else:
                     txt = page.inner_text("body", timeout=1000)
+                    if a == "expect_text":
+                        try:
+                            txt += "\n" + "\n".join(page.evaluate("() => window.__qaSeen || []"))
+                        except Exception:
+                            pass
                 return ok(txt), f"{a[7:]} did not contain/match {'%r' % needle if needle is not None else '/' + rx + '/'}"
             self._poll(page, probe, timeout)
             return f"{a[7:]} matched"

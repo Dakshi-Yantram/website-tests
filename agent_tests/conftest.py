@@ -30,6 +30,9 @@ PAGES = {
       <p id="msg"></p></body></html>""",
     # echoes ?q= into the page so tests can prove that {{TEMPLATE}} values in targets are expanded
     "/echo": "<html><title>Echo</title><body><h1>Echo</h1><p id='e'></p><script>document.getElementById('e').textContent=decodeURIComponent(location.search.slice(3))</script></body></html>",
+    # shows its validation toast for only 300 ms (real toasts disappear too) - proves expect_text still sees it
+    "/toast": """<html><title>Toast</title><body><h1>Patient form</h1><label>First Name <input name="first"></label>
+      <button onclick="var t=document.createElement('div');t.textContent='Please enter patient name.';document.body.appendChild(t);setTimeout(function(){t.remove()},300)">Save Patient</button></body></html>""",
     "/slow": "<html><title>Slow</title><body><h1>ok</h1></body></html>",
 }
 

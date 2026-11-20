@@ -168,15 +168,16 @@ def test_hims_values_are_empty_for_the_nurseconnect_leg_even_if_secrets_exist():
 def test_hims_secrets_appear_nowhere_else_in_the_workflow_file():
     text = (ROOT / ".github/workflows/website-tests.yml").read_text()
     wf = _wf()
-    # only the two named steps of agent-tests may reference them; not job env, not other jobs/steps
+    # only the named steps of agent-tests and agent-auto may reference them (step-level, never job env, never other jobs/steps)
     assert not any(k.startswith("HIMS_") for k in wf["jobs"]["agent-tests"]["env"])
     for job, body in wf["jobs"].items():
         for s in body.get("steps", []):
             has = any(k.startswith("HIMS_") for k in s.get("env", {}))
-            allowed = job == "agent-tests" and s.get("name", "").startswith(("Run approved workflows", "Redact and scan reports"))
+            allowed = ((job == "agent-tests" and s.get("name", "").startswith(("Run approved workflows", "Redact and scan reports"))) or
+                       (job == "agent-auto" and s.get("name", "").startswith(("Autonomous exploration", "Redact and scan reports"))))
             assert has == allowed, f"{job}: {s.get('name') or s.get('uses')}"
         assert not any(k.startswith("HIMS_") for k in body.get("env", {})), job
-    assert text.count("secrets.HIMS_") == 32          # 16 names x 2 steps, nothing more
+    assert text.count("secrets.HIMS_") == 64          # 16 names x 2 steps x 2 jobs (agent-tests, agent-auto), nothing more
     assert "HIMS_" not in "".join(l for l in text.splitlines() if "run:" in l and "echo" in l)   # never echoed
 
 
@@ -479,3 +480,95 @@ def test_cli_critical_by_id_via_the_shipped_config(cli, monkeypatch):
         bad = _all_pass_except() + [res("consumer_booking_flow_readonly", status, UNAPPROVED if status == "BLOCKED" else "x")]
         assert cli(bad, wfs, *CI_FLAGS) in (4, 6), status
     assert cli(_all_pass_except(), wfs, *CI_FLAGS) == 6                                     # booking flow never ran at all
+
+
+# ---- placeholder workflows (compiled from a spec without selectors) can be reported as an explicit COVERAGE GAP
+def pres(i, step_actions, status="NOT VERIFIED"):
+    steps = [R(action=a, status=s) for a, s in step_actions]
+    return R(id=i, status=status, reason="", steps=steps)
+
+
+PLACEHOLDER = [("goto", "PASS"), ("expect_visible", "PASS"), ("require_verified", "NOT VERIFIED"), ("expect_no_writes_sent", "PASS")]
+
+
+def test_placeholder_is_a_coverage_gap_only_when_asked_and_never_a_pass():
+    results = [res("a", "PASS"), pres("hi", PLACEHOLDER)]
+    strict = verdict.analyse(results, WFS, critical=CRIT)
+    assert verdict.decide_exit(strict, fail_on_critical_unverified=True) == 6          # default behaviour is unchanged
+    gap = verdict.analyse(results, WFS, critical=CRIT, placeholders_as_gaps=True)
+    assert gap["placeholders"] == ["hi"] and gap["passed"] == 1                        # it is NOT counted as verified
+    assert verdict.decide_exit(gap, fail_on_critical_unverified=True) == 0
+    lines = "\n".join(verdict.verdict_lines(gap, 0))
+    assert "PASSED WITH COVERAGE GAP" in lines and "COVERAGE GAP: 1 placeholder" in lines and "hi" in lines
+
+
+def test_a_real_non_placeholder_unverified_step_still_fails_the_critical_gate_with_the_flag_on():
+    real = pres("hi", [("goto", "PASS"), ("expect_text", "NOT VERIFIED")])             # an optional assertion failed: genuinely unverified
+    a = verdict.analyse([real], WFS, critical=CRIT, placeholders_as_gaps=True)
+    assert a["placeholders"] == [] and verdict.decide_exit(a, fail_on_critical_unverified=True) == 6
+    mixed = pres("hi", [("require_verified", "NOT VERIFIED"), ("expect_text", "NOT VERIFIED")])
+    assert verdict.decide_exit(verdict.analyse([mixed], WFS, critical=CRIT, placeholders_as_gaps=True), fail_on_critical_unverified=True) == 6
+
+
+def test_a_failure_is_never_hidden_by_the_placeholder_flag():
+    a = verdict.analyse([res("a", "FAIL"), pres("hi", PLACEHOLDER)], WFS, critical=CRIT, placeholders_as_gaps=True)
+    assert verdict.decide_exit(a, fail_on_critical_unverified=True) == 1
+
+
+def test_ci_workflow_uses_the_gap_flag_unless_the_owner_opts_out():
+    text = (ROOT / ".github" / "workflows" / "website-tests.yml").read_text(encoding="utf-8")
+    assert "--placeholders-as-gaps" in text and "AGENT_PLACEHOLDERS_FAIL" in text
+    assert "python agent.py auto" in text and "agent-auto:" in text
+    yaml.safe_load(text)
+
+
+# ---- login retry in the workflow runner (5xx retried, credential rejection never)
+class _FakeLP:
+    def __init__(self, results):
+        self.results, self.submits, self.opens = list(results), 0, 0
+
+    def open(self):
+        self.opens += 1
+
+    def submit(self, email, pw):
+        self.submits += 1
+        return self.results.pop(0)
+
+
+def _login_with(monkeypatch, results):
+    import config
+    import pages.login_page as lpm
+    from qa_agent import runner
+    fake = _FakeLP(results)
+    monkeypatch.setattr(lpm, "LoginPage", lambda *a, **k: fake)
+    monkeypatch.setitem(config.ROLES, "x", config.Role("x", "hospital", "RETRY_E", "RETRY_P"))
+    monkeypatch.setenv("RETRY_E", "u@example.invalid")
+    monkeypatch.setenv("RETRY_P", "pw-for-retry-test")
+    monkeypatch.setenv("QA_LOGIN_RETRY_WAIT_S", "0")
+    return fake, runner.default_login
+
+
+def _lr(ok, status=0, reason=""):
+    from pages.login_page import LoginResult
+    return LoginResult(ok, "", 0.1, reason or ("ok" if ok else "rejected"), status)
+
+
+def test_login_5xx_is_retried_then_succeeds(monkeypatch):
+    fake, login = _login_with(monkeypatch, [_lr(False, 500), _lr(False, 502), _lr(True, 200)])
+    login(None, "x", "http://localhost")
+    assert fake.submits == 3
+
+
+def test_login_5xx_gives_up_after_the_retries_and_says_how_often(monkeypatch):
+    fake, login = _login_with(monkeypatch, [_lr(False, 500)] * 3)
+    with pytest.raises(AssertionError) as e:
+        login(None, "x", "http://localhost")
+    assert fake.submits == 3 and "HTTP 500" in str(e.value) and "after 3 attempts" in str(e.value)
+
+
+@pytest.mark.parametrize("status", [401, 403, 422, 429])
+def test_login_credential_rejection_or_rate_limit_is_never_retried(monkeypatch, status):
+    fake, login = _login_with(monkeypatch, [_lr(False, status), _lr(True, 200)])
+    with pytest.raises(AssertionError) as e:
+        login(None, "x", "http://localhost")
+    assert fake.submits == 1 and f"HTTP {status}" in str(e.value)
