@@ -1353,7 +1353,11 @@ class Explorer:
         if not hs or not any(h.lower() in body.lower() for h in hs):
             return ""
         facts = page.evaluate(PAGE_FACTS_JS)
-        return "strong" if (facts["tables"] or facts["inputs"] >= 2 or len(body) > 400) else "weak"
+        try:      # the sidebar alone can be hundreds of characters: judge the main content area when there is one
+            main_len = page.evaluate("() => (document.querySelector('main,[role=main]') || document.body).innerText.length")
+        except Exception:
+            main_len = len(body)
+        return "strong" if (facts["tables"] or facts["inputs"] >= 2 or main_len > 400) else "weak"
 
     @staticmethod
     def _logged_out_page(page) -> bool:
@@ -1422,15 +1426,37 @@ class Explorer:
                     if time.time() > rc.deadline:
                         break
                     owner = next(iter(self.owner_pages[(app, path)]))
-                    self._goto(rc, self._base(app) + path)
-                    page.wait_for_timeout(700)
+                    refusals = []
+                    handler = (lambda resp: refusals.append(f"{resp.status} {norm_path(resp.url)}")
+                               if resp.status in (401, 403) and "/api" in resp.url and len(refusals) < 4 else None)
+                    page.on("response", handler)
+                    try:
+                        self._goto(rc, self._base(app) + path)
+                        page.wait_for_timeout(900)
+                    finally:
+                        page.remove_listener("response", handler)
                     tested += 1
-                    if self._renders_like(page, headings):
-                        self.add(rc, f"cross:{path}", "Medium", "access-control",
+                    if norm_path(page.url) != norm_path(path):        # the app sent this role somewhere else: the route IS protected
+                        continue
+                    verdict = self._renders_like(page, headings)
+                    if not verdict:
+                        continue
+                    repro = [f"Sign in as '{role}'", f"Type {path} into the address bar"]
+                    if refusals:
+                        self.add(rc, f"cross-shell:{owner}", "Low", "access-control",
+                                 f"Role '{role}' can open the screens of '{owner}' (the server refuses their data)",
+                                 f"Typing these addresses as '{role}' shows the page layout of '{owner}', but the server answered 401/403 for the data, so nothing private "
+                                 "was exposed. Low priority: ideally the app redirects the wrong role instead of showing an empty screen.",
+                                 path, [f"{path}: {refusals[0]}"], repro, per_role=True)
+                    else:
+                        sev = "Medium" if verdict == "strong" else "Low"
+                        self.add(rc, f"cross:{path}", sev, "access-control",
                                  f"Role '{role}' can open a page only '{owner}' reached by browsing: {path}",
-                                 f"The '{role}' user did not find this page through the menu, but typing the address opens it with the same content as for '{owner}'. "
+                                 f"The '{role}' user did not find this page through the menu, but typing the address stays on that page and shows the same "
+                                 f"{'content' if verdict == 'strong' else 'layout (little data)'} as for '{owner}', and the server did NOT refuse any data request. "
                                  "If this page should be limited to that role, the route is not protected. If it is meant to be shared, ignore this.",
-                                 path, [f"owner role: {owner}"], [f"Sign in as '{role}'", f"Type {path} into the address bar"], shot=True, page=page, per_role=True)
+                                 path, [f"owner role: {owner}", f"stayed on {norm_path(page.url)}", f"match strength: {verdict}", "no 401/403 seen"], repro,
+                                 shot=True, page=page, per_role=True)
                 self.notes.append(f"cross-role check ({app}/{role}): {tested} page(s) from other roles opened")
             finally:
                 ctx.close()
