@@ -363,6 +363,11 @@ class Runner:
                         self._login_blocked[key] = f"Login for role '{wf['role']}' skipped: the server rate-limited logins (HTTP 429) earlier in this run"
                     else:
                         sr.status, sr.error = "FAIL", redact(str(e))
+                        if re.search(r"HTTP 5\d\d", str(e)):
+                            # The server itself failed the login (5xx). Report it once as FAIL; retrying for every remaining workflow of this
+                            # role only hammers a struggling server and ends in a 429 lockout, so later workflows are BLOCKED instead.
+                            self._login_blocked[key] = (f"Login for role '{wf['role']}' skipped: the server already failed this login earlier "
+                                                        "in this run (HTTP 5xx). Environment issue; not retried to avoid a rate-limit lockout")
                 except Exception as e:
                     sr.status, sr.error = "FAIL", redact(f"{type(e).__name__}: {str(e).splitlines()[0][:200] if str(e) else ''}")
                 if sr.status == "FAIL":
