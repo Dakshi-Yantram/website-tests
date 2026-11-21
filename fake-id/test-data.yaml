@@ -1,0 +1,38 @@
+# Test-data configuration for the login agent.  Synthetic values only - no secrets, no real people.
+version: "1.0"
+
+data:
+  # Typed into fields on pages where the login POST is blocked or never sent.  Not a credential for anything.
+  dummy_email: "typed.by.agent@example.invalid"
+  dummy_password: "Dummy-Typed-Value-123"
+  malformed_email: "not-an-email"
+  # Host used by every redirect payload.  `.invalid` can never resolve, so nothing can really be reached.
+  external_host_marker: "evil.example.invalid"
+  # Frontend portal landing paths (src/lib/rbac.ts PORTAL_HOME) - used by cross-portal redirect checks.
+  portal_home:
+    consumer: "/consumer"
+    partner: "/partner"
+    admin: "/dashboard"
+
+limits:
+  step_timeout_ms: 15000
+  navigation_timeout_ms: 30000
+  login_wait_ms: 20000
+  # Hard cap of real login POSTs per run (staging/local only).  Backend limit is 20 per 15 min per IP (app/api/v1/auth.py).
+  max_login_posts_per_run: 14
+
+patterns:
+  # Any of these in the error box counts as "the login was refused with a message".
+  login_rejected_message: "invalid|not valid|aren't valid|incorrect|wrong|failed|try again|too many|required"
+  # A safe error must NOT reveal whether the e-mail exists.
+  account_enumeration: "not found|no account|does not exist|unknown user|not registered|no user|user doesn't exist"
+
+# post_login: true -> the payload is also used by the staging test that logs in WITH the payload in ?redirect=
+redirect_payloads:
+  - {id: R1, label: absolute https URL,            value: "https://evil.example.invalid/phish", post_login: true}
+  - {id: R2, label: protocol-relative URL,         value: "//evil.example.invalid",             post_login: true}
+  - {id: R3, label: backslash host trick,          value: "/\\evil.example.invalid",            post_login: true}
+  - {id: R4, label: javascript scheme,             value: "javascript:void(0)"}
+  - {id: R5, label: percent-encoded //,            value: "raw:%2F%2Fevil.example.invalid"}
+  - {id: R6, label: double percent-encoded //,     value: "raw:%252F%252Fevil.example.invalid"}
+  - {id: R7, label: tab character before slash,    value: "raw:/%09/evil.example.invalid"}
