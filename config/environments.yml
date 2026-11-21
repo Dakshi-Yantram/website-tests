@@ -5,3 +5,14 @@ environments:
     apps:
       nurseconnect:
         base_url: https://nurseconnect.co.in
+  staging:
+    kind: staging
+    allowed_origins:
+      - http://localhost:4173
+      - http://localhost:8001
+    auth_origins:
+      - http://localhost:8001
+    apps:
+      nurseconnect:
+        base_url: http://localhost:4173
+        api_base_url: http://localhost:8001

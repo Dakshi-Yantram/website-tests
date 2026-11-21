@@ -114,3 +114,7 @@ class Observer:
         rec = self._by_request.get(id(req))
         if rec is not None and rec["status"] is None:
             rec["blocked"] = True
+            try:
+                rec["error"] = str(req.failure or "")[:120]      # e.g. net::ERR_FAILED (CORS / network), never a body or header
+            except Exception:
+                rec["error"] = ""

@@ -269,7 +269,12 @@ class Executor:
             return any(a["status"] is not None and (not wanted or a["status"] in wanted) for a in sent)
         if not self._poll(chk, self._timeout(s, 10000)):
             if att and all(a["blocked"] for a in att):
-                raise StepFailed("the login request never left the browser (blocked by the agent's safety guard): " + "; ".join(self.guard.blocked[-2:]))
+                if self.guard.blocked:
+                    raise StepFailed("the login request was blocked by the agent's safety guard: " + "; ".join(self.guard.blocked[-2:]))
+                err = next((a.get("error") for a in att if a.get("error")), "")
+                raise StepFailed("the login request was allowed by the agent's guard but failed in the browser/network"
+                                 + (f" ({err})" if err else "")
+                                 + ". Typical causes: the API does not allow this site's origin (CORS), the API address is wrong or the tunnel is down.")
             if not att:
                 raise StepFailed("no login request was sent")
             raise StepFailed(f"login request answered HTTP {got.get('codes')}, expected one of {wanted}")
