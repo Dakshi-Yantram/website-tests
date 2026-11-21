@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_nur-002
+  app: hospital
+  title: Vitals and clinical documentation
+  description: 'Auto-compiled from nurse.yaml / NUR-002. Business assertions: Saved
+    vitals/notes visible to treating doctor'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Saved vitals/notes visible to treating doctor
+  sources:
+  - file: spec:nurse.yaml#NUR-002
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: NUR-002
+    model: deterministic-fallback
+    source_sha256: 98b6f13d693b93999c4e476d72585880b66be140a5ef38c676f7b9a9029cf41e
+    compiled: false
+    requires_human_approval: true
+  role: nurse_hospital

@@ -1,0 +1,39 @@
+version: 1
+workflows:
+- id: spec_rec-008
+  app: hospital
+  title: Tax invoice
+  description: 'Auto-compiled from reception.yaml / REC-008. Business assertions:
+    Tax invoice totals and patient match database'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Tax invoice totals and patient match database
+  sources:
+  - file: spec:reception.yaml#REC-008
+  steps:
+  - action: goto
+    path: /hospital-dashboard/reception/tax-invoice
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: REC-008
+    model: deterministic-fallback
+    source_sha256: 7f99d54be7fdba44fba43a0493df214d2b8c58bae106f928ac1e034ba56a055f
+    compiled: false
+    requires_human_approval: true
+  role: reception

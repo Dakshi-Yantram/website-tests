@@ -1,18 +1,70 @@
-﻿version: 1
+# Explicit environment declarations. This file - NOT the look of a URL - decides where writes may happen.
+#
+# kind: production  -> read-only, always. Writes can never be enabled.
+# kind: staging     -> writes possible ONLY if every rule in docs/STAGING_AND_SECURITY.md holds
+#                      (explicit allowed_origins, confirmation phrase, per-workflow --confirm-write, ...).
+# kind: local       -> same rules as staging; for localhost test servers.
+#
+# Anything not listed here is "unknown" and is treated as read-only (fail closed).
+version: 1
+
+# Extra origins that must never be a write target (production environments below are added automatically).
+production_origins: []
+
 environments:
   production:
     kind: production
     apps:
       nurseconnect:
         base_url: https://nurseconnect.co.in
+      # ASSUMED production until you declare otherwise: the repo never said this host is a test deployment.
+      hospital:
+        base_url: http://hospitaldashboard-env.eba-n7anfees.ap-south-1.elasticbeanstalk.com
+
   staging:
     kind: staging
     allowed_origins:
-      - http://localhost:4173
-      - http://localhost:8001
+      - https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev
+      - https://see-resist-teams-integral.trycloudflare.com
+      # - http://localhost:8080
     auth_origins:
-      - http://localhost:8001
+      - https://see-resist-teams-integral.trycloudflare.com
     apps:
-      nurseconnect:
-        base_url: http://localhost:4173
-        api_base_url: http://localhost:8001
+      nurseconnect: {base_url: https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev}
+      # nurseconnect: {base_url: http://localhost:8080}
+    # verify:
+    #   path: /qa-environment.json
+    #   json_key: environment
+    #   equals: staging
+
+    # ---- Phase 1 additions (all optional; uncomment and fill in with your REAL staging values) ----
+    # The backend (FastAPI) staging URL. It must also be listed in allowed_origins above.
+    # NOT filled in: I do not know your staging API address and will not guess it.
+    #   apps:
+    #     nurseconnect:
+    #       base_url: https://nurseconnect-frontend-staging.dakshi-gupta.workers.dev
+    #       api_base_url: https://<your-staging-api-host>
+    #
+    # Payment SANDBOX only. Values are NAMES of local environment variables, never the keys themselves.
+    # mode must be sandbox or test; live-looking keys (rzp_live_, sk_live_ ...) make writes FAIL.
+    # payment:
+    #   provider: razorpay
+    #   mode: sandbox
+    #   key_id_env: PAYMENT_SANDBOX_KEY_ID
+    #   key_secret_env: PAYMENT_SANDBOX_KEY_SECRET
+    #
+    # Optional: prove the API is staging (the endpoint must return {"environment": "staging"} or similar).
+    # api_verify: {path: /qa-environment.json, json_key: environment, equals: staging}
+    #
+    # Optional: name of a local env var holding the staging DB URL, to check it is not production.
+    # database:
+    #   url_env: STAGING_DATABASE_URL
+    #   name_pattern: "staging|test"
+    #   forbidden_hosts: [<your-production-db-host>]
+    #
+    # Optional: declare how test data is isolated.
+    # test_data:
+    #   marker_prefix: AUTOTEST_
+    #   dedicated_accounts: true
+    #   account_email_regex: "(autotest|qa)\\+.*@"
+

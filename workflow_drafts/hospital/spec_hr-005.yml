@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_hr-005
+  app: hospital
+  title: Training and certifications
+  description: 'Auto-compiled from hr.yaml / HR-005. Business assertions: Qualification
+    records tracked and role-scoped'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Qualification records tracked and role-scoped
+  sources:
+  - file: spec:hr.yaml#HR-005
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: HR-005
+    model: deterministic-fallback
+    source_sha256: 5694dfcc71ae5d6e378c4b4370cd5448086b736e89b6e4b1d37dad9692c0a873
+    compiled: false
+    requires_human_approval: true
+  role: hr

@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_adm-003
+  app: hospital
+  title: Hospital settings CRUD
+  description: 'Auto-compiled from admin.yaml / ADM-003. Business assertions: Updated
+    settings visible only to authorized hospital'
+  status: draft
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Updated settings visible only to authorized hospital
+  sources:
+  - file: spec:admin.yaml#ADM-003
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: ADM-003
+    model: deterministic-fallback
+    source_sha256: 946426bd0c5544c0a9b9c964e4052e9a6cc63b076aeba97809f40c26fb3d8b88
+    compiled: false
+    requires_human_approval: true
+  role: hospital_admin

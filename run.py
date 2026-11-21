@@ -8,6 +8,8 @@ PHASES = {
     "discovery": "tests/test_03_discovery.py", "pages": "tests/test_04_pages.py",
     "forms": "tests/test_05_forms.py", "permissions": "tests/test_06_permissions.py",
     "workflows": "tests/test_07_workflows.py",
+    "opd": "tests/test_08_opd_registration.py",
+    "details": "tests/test_09_patient_details.py",
 }
 
 ap = argparse.ArgumentParser()

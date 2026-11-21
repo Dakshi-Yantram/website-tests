@@ -1,0 +1,40 @@
+version: 1
+workflows:
+- id: spec_fin-001
+  app: hospital
+  title: Finance reports and permissions
+  description: 'Auto-compiled from finance.yaml / FIN-001. Business assertions: Totals
+    reconcile source transactions; unauthorized edits blocked'
+  status: draft
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Totals reconcile source transactions
+  - unauthorized edits blocked
+  sources:
+  - file: spec:finance.yaml#FIN-001
+  steps:
+  - action: goto
+    path: /hospital-dashboard/finance
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: FIN-001
+    model: deterministic-fallback
+    source_sha256: 37f82cac0367f620548511e65c9659fca7a36a48b16605cae2c9ffc1927e8153
+    compiled: false
+    requires_human_approval: true
+  role: finance

@@ -1,0 +1,752 @@
+{
+  "approvals": {
+    "consumer_booking_flow_readonly": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-13T09:24:13+00:00",
+      "approved_by": "Dakshi",
+      "hash": "11a7ff17e23065ca8b504802b9a39ad13e21455c5a13c17a917564ce85ebe0fb",
+      "reason": "Fixed selector: booking entry point is a link, not a button. Read-only, no writes.",
+      "risk": "medium",
+      "writes": false
+    },
+    "doctor_opd_list_navigation": {
+      "app": "hospital",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ebec03e8ad3c925435263fba354dacb805e820e83869fa2f66fc67ff30a16eb2",
+      "reason": "Reviewed; read-only OPD navigation",
+      "risk": "low",
+      "writes": false
+    },
+    "hospital_opd_registration_validation": {
+      "app": "hospital",
+      "approved_at": "2026-11-20T07:35:58+00:00",
+      "approved_by": "Dakshi",
+      "hash": "69865439402c41ffd9c2b24c085281812667359804da656db17ba31fc02f5f08",
+      "reason": "Validation text matches live toast",
+      "risk": "low",
+      "writes": false
+    },
+    "nurse_login_form": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2ff23a0c027394b5a5bf422be11dfe825b69c56863367c20e09edc7bbebb87c3",
+      "reason": "Reviewed; test account login only",
+      "risk": "low",
+      "writes": false
+    },
+    "nurse_workspace_navigation": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "12f8170d170a7e91859138b03206540f61e228a5cf40160ab46e8371e27e9efe",
+      "reason": "Reviewed; read-only navigation",
+      "risk": "low",
+      "writes": false
+    },
+    "nurseconnect_login_empty_submit": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:52+00:00",
+      "approved_by": "Dakshi",
+      "hash": "55d1da2d1c364b1f4cf5737da8af4b2899f1e3532f856c02dffc5da871cdfed1",
+      "reason": "Reviewed; empty submit with all writes blocked",
+      "risk": "low",
+      "writes": false
+    },
+    "nurseconnect_login_page_loads": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-21T15:53:26+00:00",
+      "approved_by": "Dakshi",
+      "hash": "82e2a6439f7ecd29b9f65623c263c734a3e321008b2908564e308e6b1b76cc2a",
+      "reason": "Reviewed; public login page check only, no writes",
+      "risk": "low",
+      "writes": false
+    },
+    "sec_01_anonymous_cannot_open_nurse_area": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-29T11:40:27+00:00",
+      "approved_by": "Dakshi",
+      "hash": "37dc8325aef184f6bb8da08a3ceea03a66cac8696c1f37400a3242e2ed55c112",
+      "reason": "Read-only anonymous access check on staging",
+      "risk": "low",
+      "writes": false
+    },
+    "sec_02_anonymous_cannot_open_customer_area": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-29T11:40:27+00:00",
+      "approved_by": "Dakshi",
+      "hash": "8629e917865cf27cf42a4d26c69af0d0cd1356754c33740a46bcb620fc0acb08",
+      "reason": "Read-only anonymous access check on staging",
+      "risk": "low",
+      "writes": false
+    },
+    "sec_03_anonymous_cannot_open_staff_areas": {
+      "app": "nurseconnect",
+      "approved_at": "2026-10-29T11:55:15+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2db9986c38fcf772806d06ad0cb0b351a5e69212c6d46d3570be4b230757efe9",
+      "reason": "Read-only anonymous access check on staging",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_adm-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:18+00:00",
+      "approved_by": "Dakshi",
+      "hash": "67c55f9c7950dace4254c6dd9b91995f84822e1e3be52b94f62e3f9ee9eaebb9",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_adm-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:18+00:00",
+      "approved_by": "Dakshi",
+      "hash": "fd32e8d4e29973dc54863fb2f35eb713f95afb9f1c62f45302ff979198ff7afd",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_adm-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:18+00:00",
+      "approved_by": "Dakshi",
+      "hash": "25d9e3d3afb142d6e1800af5f4600c933ef8e4578143177ae781f6bbfe101821",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_auth-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "56499e28ab1ebaea61231aa1476035896ff3af03b1995f09e48a26cac43de9fc",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_auth-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "fae7691a6a02c4dab018801541e27aefd9cb28e780d6acb81f70601e0cb4b927",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_auth-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "941eca00655e6256651bc283296bf5c8c66f68e52697826b67b57ffb1fdc80ff",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_auth-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "a4fa06116d03b6486caa8b06fc9b7c50fdd8517cbef5d829fd66c3018eadbe2d",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_auth-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "b4764d4a447b42a9a2b3aeb2d6db80f1fc5de1529085686a3002bf96b0b84f47",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_emr-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "1cd22a4842f67743e2df74fb11a22157fab679f307ec8ccc9ed7f3fed119a3f1",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_emr-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "99679bbdcc12fdd1566f4263a71d2af7648bd22651f299d349a11142825a3119",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_fin-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "372e5eccf9ef6ff6fd0f433642eb174e11ee49ee43e56e6dbcca20e4f9a72b87",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_fin-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "9a684dc0ebe8128dfaacf792394579f487317fab58df9bb256f30acecf7c911a",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_fin-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ed6d6ed303ac7449bc500c4fc6d28745b7b4d9b8c01889d36ee9fc7b2d2fa215",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_hr-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "f5e0d3916eac62bd5a1e3ed9cc2d5c8d9a28c700cc844f417f60338380f918d4",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_hr-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c68f51cea9f4e5564bdbc6839fe5f58fed18fcdfafc5d3fde6764f73a3ece566",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_hr-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:19+00:00",
+      "approved_by": "Dakshi",
+      "hash": "27f7c68d481e1ca18b0a50d20a04f654ea7fb60835522e44a50c87d0e67057ec",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_hr-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "0b39d3c0ae9bc649c7a3d8b167e253275bfef625de23556ef9d41b861fed87c2",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_hr-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "45d696faedb1d3e2ce6ff5acb9025d420beae1b20d4cd598664fecd8120dfb57",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_ipd-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "fbcf58b24b94cb9ce518770c833cfd06f57035075db475ce4688e8aa302d8ea3",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_ipd-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "fe8f4eeca414c08e245f307387002720ed0f9e1da2120250b1dbca697b8b4543",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ipd-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "10217a2b1c02c54f9c036dcb7760ab0acf0864bf69a980aff340d9dc6738cd6d",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ipd-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "57fc9837ddd89452a7ed02ecc28ca0952fb76d102c0e22dad5bc8aa3b1043b45",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ipd-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "b0a7ed162382c3c327147896ecf5edc7888f21e9d0c68b7cbaf51b3de6728eb8",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_lab-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c3f54eb8bb89d3dec5f3502f480ae2ad7b982aa4af0a80a6237d86a7d0d5ac42",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_lab-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "d5ee9d24bddabed8cfd1e09f3a65bc3150fad918a245b98803917c3dffeef957",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_lab-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "a9362374df26f8ad7fb64ad2cdb61ce51df75065003f13416e324096317616de",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_lab-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c4124f568c10604a455033004206d1104b2a49e8400f418b809f5758ed5fc2f7",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_nur-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "8a63fbb95ce8db35110d3c3fe1c399433843d2eea6bc835e26766c392fa9522b",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_nur-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "179a26e6b51bf5eba4a5903818466dde6667d83ede497049d08a679f97ef89dd",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_opd-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:10:02+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2fbe3333c9007e58ad54eedb7da9a7212cef1f44161a9ae5433061e08c138607",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_opd-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "1e410a800c61dba9492801b0eaddfe0dac8383a72963038ffa56a504ca191901",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_opd-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "bd2f8a491d2ae402845adbb977323ab028a49e3a24a6ab7e4ca95c19e1845315",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_opd-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:20+00:00",
+      "approved_by": "Dakshi",
+      "hash": "422bd8204c0ea1393e1da3abdf9c4fbafac8044916d12794080480b5acda5604",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_ot-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "5fbea4158c60eca4b5afe3c3d85a686b4414592af7c30291adf799d746e9ef4a",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_ot-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "6b0ac1c713e03c640409a5a07478d0489bf2e223704979688f4b1ac236d13d7c",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ot-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "3b6d0fcb64360ecf61f80d2724d0f95d0246f8f977e7dd04b04e4907ed602c6f",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ot-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ba81a27850c1d2daa6facab5a64a17f606427ec0e0da86b84db3097546b133a8",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_ot-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "20c2a99ca4e40cd5b2848baf8685bc1f753a915538059e08e8ce9d249157e2ab",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_pha-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "6015024a06373a28ea745b8d3df05271120fe5dd897a80a14263df05bae39810",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_pha-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ff26a6f1422eb6f28c074f161a414fd78d09afcf3269470108cc75ed921b9b53",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_pha-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "169300543e5d181595e44f2a5ab42f2f0d874ae26d077f26295494f222e4bd9b",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_pha-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2b040f03c1e8387ed4743f37a0a3b3b7ef3ffb69a35aa4e59e4201f590d48607",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_rad-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "4aa1c17ff8f2968dfec2e45c9d7f2dcdd2c7519d736ab0bdb77a9214a9f08100",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:21+00:00",
+      "approved_by": "Dakshi",
+      "hash": "1df2c77238ff71e375b187daf514794cbfe1fdf668e07d971360b76b3ea22956",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-13T05:22:03+00:00",
+      "approved_by": "Dakshi",
+      "hash": "254ba7c6d3a09c78c46414caf9430f835b9c9033886378625129e12b9fde8b1c",
+      "reason": "Corrected OPD route to /addPatient/opd",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-13T11:47:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "b504e45961b9759ddbab7a994883a0c022301056130187296f956d4de1b4b54d",
+      "reason": "Replaced placeholder with real read-only form-render checks (IPD). No writes.",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-13T11:47:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "ca3a225d540bfec7b1fbcafec0642b6c85425c177d1a0ad8a813103c1f11e7be",
+      "reason": "Replaced placeholder with real read-only form-render checks (Emergency). No writes.",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "f4debd2f82c3cc79ccbde1040d4f89ca7632bed38ba3ee8da619cbbaffe2bae4",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_rec-006": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c8c40f7052f4f3e762b083bc1910b101070f455d52d17eecdf66579ba2f18a5d",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_rec-007": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "806c5683dee219ece8a1ef3168b768a10438480ec7bdb390d565db4a6190cea3",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_rec-008": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "2b923919680e0c51ad34260d2561e870d3525550b4365c5ced325f887eaf146d",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_rec-009": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "abf76ed84ac7629068289c643abe825a3c10d5616a8c88e5f22d3ac0b2d9ae2d",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-login": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "4e2b98e03519f4f9b5597bd7a24200731717a65aa014aeddfcf45614bdb1e9d8",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-login-inputs": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "c76a0e76ac4b53360ca393b0f76c6e4cbb1778dda51a8ad3498fbbf26bd22a5e",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-public-packages": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "6b563810c7bac914e5259e6e977cfdce8106eee34094f30d4c11decdeb836ad1",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_s-public-services": {
+      "app": "nurseconnect",
+      "approved_at": "2026-11-02T16:36:24+00:00",
+      "approved_by": "Dakshi",
+      "hash": "dea1e03c58b0b471b9bc1b5977d7715a773d3f40cdc8bb692cb75ffd7a0b176b",
+      "reason": "Reviewed read-only Nurse Connect public staging smoke",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "7323c7cd60199049a4810ab34c870651dab349193078e95d13749f5de7d11484",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-002": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:22+00:00",
+      "approved_by": "Dakshi",
+      "hash": "f1f7e4ccce67a80c5e9831639ea9942c515024cdfa2e8b3a308fc50a1919f0c4",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-003": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "3467ba88f56d04bf8a75ccbcd2a76e9a0e4adfe1000018cba2d7bd5f415f8b5f",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-004": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "34b5863a0b67e9957a1250dd57576db36a9552099dcd0153f75495c53af76618",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-005": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "f59ee489c100ae3a1df8741492d7e3471fbae04a14c7874643578a0f893a30b9",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-006": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "43bbd04677a294fe88a41abe8717d97ea0b253415be6cd506b2c5c8774218c3c",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-007": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "956148b502e8a00fe0b50e2cc985cd17310d43b0f6a20faef29d9d0810315ac4",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-008": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "69b0c28fffbe397a1425dc316937a3f69540aee911335f724457c21941519fea",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-009": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "d38f8365af176e4262839f2033fd1bafccb93d0b12b4b5bf76128fee4d30043e",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-010": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "e5a2809714773f9ce5d90d479ad0b597ad992c826c8fc67d604de0ea388f0433",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-011": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "cbad4eca387c6fff2d74f41f1f58b1b574e42570450aa191e97f39d127358090",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-012": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "8352f5f2aa6ec0320c66cac334719b45a6f66380b7f27fc89b62e30c75fbc8d5",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-013": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "f81d9cf4a6043a823a09308f421c4cf60c971e294258ad9d54b006b913980ed7",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-014": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "88190db2e055797eac5db5331ffdf6e695a341c3b5fb7b6af2a5c1a7b56cc2d8",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_shr-015": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "1fd7ff54dfdbec5f61b7f383287b9ff84cab0af0d5e27f0b6108cad37d534f8c",
+      "reason": "Read-only page checks",
+      "risk": "low",
+      "writes": false
+    },
+    "spec_shr-016": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "e00166a25e0e4129d732c2106686feae1649b7ec945736d956bab9668410950f",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    },
+    "spec_tri-001": {
+      "app": "hospital",
+      "approved_at": "2026-11-02T08:06:23+00:00",
+      "approved_by": "Dakshi",
+      "hash": "b7df9e4bf705eaa94dc6034ef3c2072dbe9ef1c522530ff9cf39376f7f586275",
+      "reason": "Read-only page checks",
+      "risk": "high",
+      "writes": false
+    }
+  },
+  "version": 1
+}

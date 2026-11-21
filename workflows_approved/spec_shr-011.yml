@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: spec_shr-011
+  app: hospital
+  title: Audit trail creation
+  description: 'Auto-compiled from shared.yaml / SHR-011. Business assertions: Mutation
+    actor, time, target, hospital correct'
+  status: approved
+  risk: high
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Mutation actor, time, target, hospital correct
+  sources:
+  - file: spec:shared.yaml#SHR-011
+  steps:
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: SHR-011
+    model: deterministic-fallback
+    source_sha256: 7fdd509790b93e2e522570ab943336e398063dc7e698bc863abad54e021ddb8d
+    compiled: false
+    requires_human_approval: true
+  role: doctor

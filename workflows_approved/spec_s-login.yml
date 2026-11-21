@@ -1,0 +1,36 @@
+version: 1
+workflows:
+- id: spec_s-login
+  app: nurseconnect
+  title: Confirm /auth/login renders its source-defined 'Welcome Back' section
+  description: 'Source-anchored UI smoke only; does not verify full business process.
+    Source: src/routes/auth.login.tsx'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Public page accessible
+  - No record changes, messaging, checkout or payments
+  expected_outcome:
+  - Source-defined visible text 'Welcome Back' is present on /auth/login
+  sources:
+  - file: frontend/src/routes/auth.login.tsx
+  - file: spec:nurseconnect_ci_smoke.yaml#S-LOGIN
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: GET /auth/login responds
+  - action: expect_visible
+    target:
+      text: Welcome Back
+    expected: Source-defined 'Welcome Back' content renders
+    timeout_ms: 25000
+  - action: expect_no_writes_sent
+    expected: Read-only workflow sent no business write requests
+  generated:
+    method: source-anchored-read-only-smoke
+    original_id: S-LOGIN
+    model: none
+    source_sha256: 9435514527d4e63a16cb7e1c6cbfaaa5edd673047d1c72b6a0259cee460a3d68
+    compiled: false
+    requires_human_approval: true

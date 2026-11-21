@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: spec_opd-003
+  app: hospital
+  title: Follow-up scheduling
+  description: 'Auto-compiled from opd.yaml / OPD-003. Business assertions: Correct
+    followup linked; appears once; correct status'
+  status: approved
+  risk: low
+  writes: false
+  preconditions:
+  - Dedicated synthetic staging hospital and test records
+  - Authenticated authorized test role
+  expected_outcome:
+  - Correct followup linked
+  - appears once
+  - correct status
+  sources:
+  - file: spec:opd.yaml#OPD-003
+  steps:
+  - action: goto
+    path: /hospital-dashboard/opd/followup
+    expected: Route responds
+  - action: expect_visible
+    target:
+      css: body
+    expected: Page renders
+  - action: require_verified
+    reason: Source specification provides no executable assertion selectors; configure
+      AI compilation and staging UI evidence
+    expected: Business assertions need a real UI or API verification
+  - action: expect_no_writes_sent
+    expected: No business write request was sent
+  generated:
+    method: multiapp-spec-compiler
+    original_id: OPD-003
+    model: deterministic-fallback
+    source_sha256: efe23e2560903a9706d992c5c690b2b60f358619e09ce424e92820cbeba6fd6a
+    compiled: false
+    requires_human_approval: true
+  role: doctor

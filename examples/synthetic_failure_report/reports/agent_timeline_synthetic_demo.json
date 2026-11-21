@@ -1,0 +1,29 @@
+{
+  "run_id": "synthetic_demo",
+  "workflows": [
+    {
+      "id": "SYNTHETIC-OPD-001",
+      "status": "FAIL",
+      "steps": [
+        {
+          "n": 1,
+          "action": "goto",
+          "status": "PASS",
+          "duration_s": 0.0,
+          "timestamp": "2026-10-30T00:00:01Z",
+          "url": "",
+          "screenshot_link": null
+        },
+        {
+          "n": 2,
+          "action": "expect_visible",
+          "status": "FAIL",
+          "duration_s": 0.0,
+          "timestamp": "2026-10-30T00:00:04Z",
+          "url": "",
+          "screenshot_link": "screenshots/demo_OPD_02_FAIL.png"
+        }
+      ]
+    }
+  ]
+}
