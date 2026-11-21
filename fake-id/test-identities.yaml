@@ -1,0 +1,40 @@
+# Fictional test identities for the login agent (login_agent/).  NOTHING here is a real person or a real account.
+#
+# Rules
+#   * Passwords are NEVER written in this file.  `password_env` names the environment variable that holds it (put it in .env,
+#     which is git-ignored).  The only literal password below belongs to the deliberately WRONG-password fixture.
+#   * `email_env` is an optional override: if that variable is set, it replaces `email`.  Use it when the staging account you
+#     seeded has a different address (see README.md - the backend validates e-mails with pydantic EmailStr, which normally
+#     rejects reserved `.invalid` domains, so a seeded account may need a different address).
+#   * `seeded: false` means the account does not exist anywhere until YOU create it on STAGING.  Never create it on production.
+#   * `landing_path` is where the frontend sends that role after login (src/lib/rbac.ts PORTAL_HOME).
+version: "1.0"
+identities:
+  consumer_valid:
+    role: consumer
+    full_name: "Test Consumer"
+    email: "consumer.qa@example.invalid"
+    email_env: "NC_TEST_CONSUMER_EMAIL"
+    phone: "+919000000001"
+    password_env: "NC_TEST_CONSUMER_PASSWORD"
+    landing_path: "/consumer"
+    seeded: false
+
+  consumer_invalid_password:
+    role: consumer
+    full_name: "Invalid Login Fixture"
+    email: "invalid-login.qa@example.invalid"
+    email_env: "NC_TEST_INVALID_EMAIL"
+    phone: "+919000000002"
+    password: "WrongPass123"          # deliberately wrong dummy value; not a credential for anything
+    seeded: false                      # must NOT exist - the test needs a rejected login
+
+  worker_valid:
+    role: partner
+    full_name: "Test Care Professional"
+    email: "worker.qa@example.invalid"
+    email_env: "NC_TEST_WORKER_EMAIL"
+    phone: "+919000000003"
+    password_env: "NC_TEST_WORKER_PASSWORD"
+    landing_path: "/partner"
+    seeded: false
