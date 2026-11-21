@@ -1,0 +1,338 @@
+# NurseConnect login page - step-by-step test plan, executed by:  python -m login_agent
+#
+# Source of truth for selectors: nurseconnect-frontend  src/routes/auth.login.tsx and auth.forgot-password.tsx.
+# They were derived from that source code and are NOT yet confirmed against the live page - run
+#     python -m login_agent --env production --only LOGIN-001
+# first; if it fails on a selector, fix it in the `selectors:` block below (the only place selectors live).
+#
+# Safety model (enforced in Python, not just described here):
+#   requires: anonymous  -> may run on any environment. On production every non-GET request is blocked in the browser.
+#   requires: staging    -> runs only on a staging/local environment declared in config/environments.yml,
+#                           otherwise it is reported NOT TESTED. Missing credentials -> BLOCKED.
+#   login_post: true     -> this test may send the ONE login request (POST .../auth/login) - staging/local only.
+#
+# Template values:  {{target.*}} {{data.*}} {{identity.*}} {{item.*}}   (data = fake-id/test-data.yaml,
+# identity = fake-id/test-identities.yaml). Passwords are resolved from environment variables at the moment of typing
+# and never printed.   Statuses: PASS | FAIL | BLOCKED (could not run) | NOT TESTED (intentionally skipped).
+version: 1
+suite: nurseconnect-login
+target:
+  login_path: /auth/login
+  forgot_path: /auth/forgot-password
+
+selectors:
+  # ---- sign-in mode ----
+  signin_heading:  'h2:has-text("Welcome Back")'
+  tab_email:       'button:text-is("Email")'
+  tab_phone_otp:   'button:text-is("Phone OTP")'
+  tab_register:    'button:text-is("Register")'
+  email_input:     'form input[type="email"]'
+  password_input:  'form input[autocomplete="current-password"]'
+  password_toggle: 'form input[autocomplete="current-password"] + button'
+  forgot_link:     'a[href="/auth/forgot-password"]'
+  login_button:    'form button:not([type="button"])'
+  error_box:       'form div.text-red-600'
+  # ---- register mode ----
+  register_heading:  'h2:has-text("Join the marketplace")'
+  reg_fullname:      'input[placeholder="e.g. Asha Mehra"]'
+  reg_send_otp:      'button:text-is("Send OTP")'
+  reg_create_button: 'button:has-text("Create account")'
+  reg_signin_link:   'button:text-is("Sign in")'
+  # ---- phone OTP mode ----
+  otp_heading:    'h2:has-text("Login with OTP")'
+  otp_phone_input: 'input[placeholder="9999900001"]'
+  otp_send_button: 'form button:has-text("Send OTP")'
+  otp_email_link:  'button:text-is("Email login")'
+  # ---- forgot-password page ----
+  forgot_heading:    'h1:has-text("Reset password")'
+  forgot_identifier: 'input[placeholder*="you@example.com or"]'
+  forgot_back:       'a:has-text("Back to sign in")'
+
+tests:
+  # ------------------------------------------------------------------------------------------------ page load
+  - id: LOGIN-001
+    title: Login page loads and shows the sign-in form
+    severity: Critical
+    requires: anonymous
+    tags: [smoke]
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_visible, target: signin_heading}
+      - {action: expect_visible, target: email_input}
+      - {action: expect_visible, target: password_input}
+      - {action: expect_visible, target: login_button}
+      - {action: expect_visible, target: forgot_link}
+      - {action: expect_visible, target: tab_register}
+      - {action: expect_attr, target: password_input, attr: type, equals: password}
+      - {action: expect_no_session}
+
+  # ------------------------------------------------------------------------------------------------ typing + visibility
+  - id: LOGIN-002
+    title: Fields accept input and the password is masked
+    severity: High
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{data.dummy_email}}"}
+      - {action: fill, target: password_input, value: "{{data.dummy_password}}"}
+      - {action: expect_value, target: email_input, equals: "{{data.dummy_email}}"}
+      - {action: expect_value, target: password_input, equals: "{{data.dummy_password}}"}
+      - {action: expect_attr, target: password_input, attr: type, equals: password}
+      - {action: expect_no_writes}
+
+  - id: LOGIN-003
+    title: Password visibility toggle shows and hides the password
+    severity: Medium
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: password_input, value: "{{data.dummy_password}}"}
+      - {action: expect_attr, target: password_input, attr: type, equals: password}
+      - {action: click, target: password_toggle}
+      - {action: expect_attr, target: password_input, attr: type, equals: text}
+      - {action: expect_value, target: password_input, equals: "{{data.dummy_password}}"}
+      - {action: click, target: password_toggle}
+      - {action: expect_attr, target: password_input, attr: type, equals: password}
+      - {action: expect_no_writes}
+
+  # ------------------------------------------------------------------------------------------------ empty / malformed fields
+  # The form has no `required` attributes, so an empty submit reaches the server (HTTP 422 on staging).
+  # On production that request is blocked by the agent: only "no session, still on login page" can be checked there.
+  - id: LOGIN-004
+    title: Empty email and empty password are rejected
+    severity: High
+    requires: anonymous
+    login_post: true
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: clear, target: email_input}
+      - {action: clear, target: password_input}
+      - {action: click, target: login_button}
+      - {action: expect_feedback, only_env_kinds: [staging, local]}
+      - {action: expect_login_request, status_in: [400, 401, 422, 429], only_env_kinds: [staging, local]}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_visible, target: password_input}
+      - {action: expect_no_session}
+
+  - id: LOGIN-011
+    title: Empty email with a password typed is rejected
+    severity: Medium
+    requires: anonymous
+    login_post: true
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: clear, target: email_input}
+      - {action: fill, target: password_input, value: "{{data.dummy_password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_feedback, only_env_kinds: [staging, local]}
+      - {action: expect_login_request, status_in: [400, 401, 422, 429], only_env_kinds: [staging, local]}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_no_session}
+
+  - id: LOGIN-012
+    title: Email typed with an empty password is rejected
+    severity: Medium
+    requires: anonymous
+    login_post: true
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{data.dummy_email}}"}
+      - {action: clear, target: password_input}
+      - {action: click, target: login_button}
+      - {action: expect_feedback, only_env_kinds: [staging, local]}
+      - {action: expect_login_request, status_in: [400, 401, 422, 429], only_env_kinds: [staging, local]}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_no_session}
+
+  - id: LOGIN-013
+    title: Malformed email is stopped by the browser before any request is sent
+    severity: Medium
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{data.malformed_email}}"}
+      - {action: fill, target: password_input, value: "{{data.dummy_password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_invalid_field, target: email_input}
+      - {action: expect_login_request, made: false}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_no_session}
+
+  # ------------------------------------------------------------------------------------------------ credentials (staging only)
+  - id: LOGIN-005
+    title: Invalid credentials are rejected with a safe error message
+    severity: Critical
+    requires: staging
+    login_post: true
+    identity: consumer_invalid_password
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [400, 401, 403, 422, 429]}
+      - {action: expect_feedback}
+      - {action: expect_text, target: error_box, not_matches: "{{patterns.account_enumeration}}"}
+      - {action: expect_text, target: error_box, matches: "{{patterns.login_rejected_message}}"}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_visible, target: password_input}
+      - {action: expect_no_session}
+
+  - id: LOGIN-006
+    title: Valid consumer login reaches the consumer portal
+    severity: Critical
+    requires: staging
+    login_post: true
+    identity: consumer_valid
+    tags: [smoke]
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [200]}
+      - {action: expect_url, same_origin: true, path_startswith: "{{identity.landing_path}}", timeout_ms: 20000}
+      - {action: expect_session}
+      - {action: expect_hidden, target: password_input}
+
+  - id: LOGIN-014
+    title: Valid care-professional login reaches the partner portal
+    severity: High
+    requires: staging
+    login_post: true
+    identity: worker_valid
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [200]}
+      - {action: expect_url, same_origin: true, path_startswith: "{{identity.landing_path}}", timeout_ms: 20000}
+      - {action: expect_session}
+
+  # ------------------------------------------------------------------------------------------------ navigation
+  - id: LOGIN-007
+    title: Forgot-password link opens the reset page and goes back (nothing is submitted)
+    severity: High
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: click, target: forgot_link}
+      - {action: expect_url, path_equals: "{{target.forgot_path}}"}
+      - {action: expect_visible, target: forgot_heading}
+      - {action: expect_visible, target: forgot_identifier}
+      - {action: click, target: forgot_back}
+      - {action: expect_url, path_startswith: /auth/login}
+      - {action: expect_visible, target: signin_heading}
+      - {action: expect_no_writes}
+
+  - id: LOGIN-008
+    title: Register tab opens the registration form and "Sign in" returns (nothing is submitted)
+    severity: High
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: click, target: tab_register}
+      - {action: expect_visible, target: register_heading}
+      - {action: expect_visible, target: reg_fullname}
+      - {action: expect_visible, target: reg_send_otp}
+      - {action: expect_visible, target: reg_create_button}
+      - {action: expect_disabled, target: reg_create_button}       # account creation needs a verified mobile OTP first
+      - {action: click, target: reg_signin_link}
+      - {action: expect_visible, target: signin_heading}
+      - {action: expect_visible, target: email_input}
+      - {action: expect_no_writes}
+
+  - id: LOGIN-015
+    title: Phone OTP tab opens and "Email login" returns (no OTP is requested)
+    severity: Low
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: click, target: tab_phone_otp}
+      - {action: expect_visible, target: otp_heading}
+      - {action: expect_visible, target: otp_phone_input}
+      - {action: expect_visible, target: otp_send_button}
+      - {action: click, target: otp_email_link}
+      - {action: expect_visible, target: signin_heading}
+      - {action: expect_no_writes}
+
+  # ------------------------------------------------------------------------------------------------ redirect validation
+  - id: LOGIN-009
+    title: "?redirect= with an external or malformed target is not followed (anonymous)"
+    severity: Critical
+    requires: anonymous
+    foreach: redirect_payloads
+    steps:
+      - {action: goto, path: "{{target.login_path}}", query: {redirect: "{{item.value}}"}}
+      - {action: wait, ms: 1200}
+      - {action: expect_url, same_origin: true, path_startswith: /auth/login}
+      - {action: expect_visible, target: signin_heading}
+      - {action: expect_no_request_to, host_contains: "{{data.external_host_marker}}"}
+      - {action: expect_no_writes}
+
+  - id: LOGIN-016
+    title: "After login, an external ?redirect= is ignored and the user lands in their own portal"
+    severity: Critical
+    requires: staging
+    login_post: true
+    identity: consumer_valid
+    foreach: redirect_payloads
+    foreach_where: {post_login: true}
+    steps:
+      - {action: goto, path: "{{target.login_path}}", query: {redirect: "{{item.value}}"}}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [200]}
+      - {action: expect_url, same_origin: true, path_startswith: "{{identity.landing_path}}", timeout_ms: 20000}
+      - {action: expect_no_request_to, host_contains: "{{data.external_host_marker}}"}
+
+  - id: LOGIN-017
+    title: After login, a safe internal ?redirect= IS honoured
+    severity: Medium
+    requires: staging
+    login_post: true
+    identity: consumer_valid
+    steps:
+      - {action: goto, path: "{{target.login_path}}", query: {redirect: /consumer/bookings}}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [200]}
+      - {action: expect_url, same_origin: true, path_startswith: /consumer/bookings, timeout_ms: 20000}
+
+  - id: LOGIN-018
+    title: After login, a redirect into another role's portal is ignored
+    severity: High
+    requires: staging
+    login_post: true
+    identity: consumer_valid
+    steps:
+      - {action: goto, path: "{{target.login_path}}", query: {redirect: /partner/assignments}}
+      - {action: fill, target: email_input, value: "{{identity.email}}"}
+      - {action: fill, target: password_input, value: "{{identity.password}}"}
+      - {action: click, target: login_button}
+      - {action: expect_login_request, made: true, status_in: [200]}
+      - {action: expect_url, same_origin: true, path_startswith: "{{identity.landing_path}}", timeout_ms: 20000}
+      - {action: expect_url, path_not_startswith: /partner}
+
+  # ------------------------------------------------------------------------------------------------ keyboard + accessibility
+  - id: LOGIN-010
+    title: Keyboard navigation reaches the controls in a logical order with a visible focus indicator
+    severity: Medium
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: tab_through, max_tabs: 14}
+      - {action: expect_tab_order, order: [email_input, password_input, password_toggle, forgot_link, login_button]}
+      - {action: expect_focus_visible, targets: [email_input, password_input, password_toggle, forgot_link, login_button]}
+
+  - id: LOGIN-019
+    title: Form controls have accessible names (label / aria-label), not just a placeholder or an icon
+    severity: Low
+    requires: anonymous
+    steps:
+      - {action: goto, path: "{{target.login_path}}"}
+      - {action: expect_accessible_name, targets: [email_input, password_input, password_toggle, forgot_link, login_button]}
