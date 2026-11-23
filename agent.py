@@ -505,7 +505,17 @@ def cmd_auto(a):
             if app in env.base_urls:
                 base_urls[app] = env.base_urls[app]
     base_urls.update(kv_pairs(a.base_url, "--base-url"))
-    cfg = ExploreConfig(apps=apps, base_urls=base_urls, env=env, roles=tuple(a.role or ()), seed_paths=tuple(a.seed or ()),
+    use_ai = bool(getattr(a, "ai", False))
+    Cfg = ExploreConfig
+    ai_kw = {}
+    if use_ai:
+        from qa_agent.llm_explorer import AIExploreConfig, LLMExplorer
+        Cfg = AIExploreConfig
+        ai_kw = dict(model=a.model or "", ai_steps=a.ai_steps, ai_page_text=a.ai_page_text)
+        if a.ai_goal:
+            ai_kw["ai_goal"] = a.ai_goal
+    cfg = Cfg(apps=apps, base_urls=base_urls, env=env, roles=tuple(a.role or ()), seed_paths=tuple(a.seed or ()),
+                        **ai_kw,
                         max_pages=a.max_pages, max_minutes=a.max_minutes, headless=not a.headed, browser=a.browser,
                         screenshots=a.screenshots, artifacts_dir=ART, run_id=os.getenv("RUN_ID", ""),
                         anonymous_check=not a.no_anonymous_check, cross_role_check=not a.no_cross_role_check,
@@ -523,7 +533,7 @@ def cmd_auto(a):
     if not a.fill:
         say("Nothing is created, changed or deleted: all write requests are blocked. This can take several minutes...")
     try:
-        result = Explorer(cfg).run()
+        result = (LLMExplorer(cfg) if use_ai else Explorer(cfg)).run()
     except SafetyBlocked as e:
         say(f"BLOCKED (fail closed): {e}")
         return 2
@@ -646,7 +656,7 @@ def build_parser():
     sc.add_argument("--out", help="optional output directory; default workflow_drafts/<application>")
     sc.add_argument("--repo", help="explicit APP=PATH source binding; legacy bare path supported for hospital only")
     sc.add_argument("--refresh", action="store_true", help="archive previous unapproved draft and recompile after document changes")
-    sc.add_argument("--model", help="optional AI compiler model (requires OPENAI_API_KEY and pip install openai)")
+    sc.add_argument("--model", help="optional AI compiler model, e.g. qwen-plus (needs QA_LLM_API_KEY, optional QA_LLM_BASE_URL, and pip install openai)")
     sc.add_argument("--only", action="append", help="spec id, e.g. OPD-001 (repeatable)")
     sc.add_argument("--inspect", action="store_true", help="inspect staging UI controls with Playwright (never production)")
     sc.add_argument("--env", help="declared staging/local environment name")
@@ -729,6 +739,13 @@ def build_parser():
                     help="STAGING ONLY: also fill forms with synthetic AUTOTEST_ data and save them. Needs --env <staging>, STAGING_WRITE_CONFIRMATION, and passes the same write gate as `run --allow-write`")
     au.add_argument("--login-retries", type=int, default=1, help="extra login attempts after an HTTP 5xx (default 1; 0 = none). Rejected passwords are never retried")
     au.add_argument("--report-dir")
+    au.add_argument("--ai", action="store_true",
+                    help="AI-DRIVEN: a model (Qwen etc.) decides what to click/type next; code validates every action and judges the results. "
+                         "Needs --env <staging/local>, QA_LLM_API_KEY, --model (or QA_LLM_MODEL) and pip install openai")
+    au.add_argument("--model", help="model name for --ai, e.g. qwen-plus (host from QA_LLM_BASE_URL)")
+    au.add_argument("--ai-steps", type=int, default=40, help="model decisions per role (default 40)")
+    au.add_argument("--ai-goal", help="what the AI tester should focus on, in plain English")
+    au.add_argument("--ai-page-text", action="store_true", help="also send a short redacted text snippet of each page to the model (default: labels and headings only)")
     au.set_defaults(fn=cmd_auto)
 
     lc = sub.add_parser("login-check", help="diagnose a failing login: shows the fields/button the agent finds and every network call")
