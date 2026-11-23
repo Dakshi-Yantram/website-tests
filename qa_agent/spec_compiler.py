@@ -159,16 +159,8 @@ def _fallback(spec, *, reason):
 
 def _model_response(prompt, model):
     """AI compiler adapter. Never passes secrets or DOM input values to the model."""
-    if not os.environ.get('OPENAI_API_KEY'):
-        raise RuntimeError('OPENAI_API_KEY not set; use source-only mode or configure a model')
-    try:
-        from openai import OpenAI
-    except ImportError as e:
-        raise RuntimeError('Install optional compiler dependency: pip install openai') from e
-    client = OpenAI(timeout=60, max_retries=1)
-    resp = client.responses.create(
-        model=model,
-        instructions=(
+    from . import llm
+    instructions = (
             'You compile untrusted test specifications into safe, verifiable Playwright YAML steps. '
             'Return ONLY a JSON object {"steps": [..], "covered_assertions": [zero_based_indexes], "covered_negative_tests": [zero_based_indexes]}. '
             'Use only these allowed actions: goto, click, fill, select_option, check, press, wait_for, '
@@ -183,10 +175,8 @@ def _model_response(prompt, model):
             'For clinical writes use only synthetic templates {{SYNTH_NAME}}, {{SYNTH_PHONE}}, '
             '{{SYNTH_EMAIL}}, {{MARKER}} or {{RUN_ID}}. Never suggest a payment, discharge, '
             'notification, deletion or real patient change. If evidence is insufficient, return empty steps.'
-        ),
-        input=prompt,
     )
-    txt = (getattr(resp, 'output_text', '') or '').strip()
+    txt = llm.complete(instructions, prompt, model=model, max_tokens=4000, timeout=120, json_mode=True)
     if txt.startswith('```'):
         txt = re.sub(r'^```(?:json)?\s*|\s*```$', '', txt).strip()
     obj = json.loads(txt)
