@@ -1,2 +1,5 @@
-# Extra packages used ONLY by tools/github_app_token.py in the discovery job (mints the GitHub App installation token).
+# Extra packages used only in CI (and by developers who run agent_tests locally).
+# PyJWT: tools/github_app_token.py mints the GitHub App installation token in the discovery job.
 PyJWT[crypto]>=2.8
+# Pillow: agent_tests/test_login_agent_selfcontained.py opens the masked failure screenshots to check inputs are hidden.
+Pillow>=10.0

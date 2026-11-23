@@ -94,25 +94,20 @@ def enrich_with_ai(findings, *, env_kind: str = ''):
         return findings
     if env_kind not in ('local', 'staging'):
         return findings
-    if not os.getenv('OPENAI_API_KEY'):
+    from . import llm
+    if not llm.is_configured():
         return findings
-    try:
-        from openai import OpenAI
-    except ImportError:
-        return findings
-    model = os.getenv('QA_DIAGNOSIS_MODEL', '').strip()
+    model = (os.getenv('QA_DIAGNOSIS_MODEL', '') or llm.default_model()).strip()
     if not model:
         return findings
-    client = OpenAI(timeout=25, max_retries=0)
     for finding in findings[:8]:
         evidence = {k: finding[k] for k in ('type', 'status', 'summary', 'expected', 'investigate')}
         try:
             assert_clean_obj(evidence, what='AI diagnostic prompt')
-            answer = client.responses.create(model=model,
-                instructions=('You analyze synthetic software test failures. Give one short hypothesis and a developer verification step. '
-                              'Never claim a root cause is proven, never suggest disabling security gates, never ask for patient data.'),
-                input=json.dumps(evidence), max_output_tokens=180)
-            hypothesis = redact((getattr(answer, 'output_text', '') or '')[:750])
+            answer = llm.complete('You analyze synthetic software test failures. Give one short hypothesis and a developer verification step. '
+                                  'Never claim a root cause is proven, never suggest disabling security gates, never ask for patient data.',
+                                  json.dumps(evidence), model=model, max_tokens=180, timeout=25, retries=0)
+            hypothesis = redact(answer[:750])
             if hypothesis:
                 assert_clean_obj(hypothesis, what='AI diagnosis response')
                 finding['ai_hypothesis_unverified'] = hypothesis
