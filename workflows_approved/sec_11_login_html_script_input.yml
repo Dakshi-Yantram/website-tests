@@ -1,0 +1,46 @@
+version: 1
+workflows:
+- id: sec_11_login_html_script_input
+  app: nurseconnect
+  title: 'Security: HTML in the login fields is not rendered or reflected'
+  description: Submits an image tag as the email; it must not be echoed back as live
+    markup.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Input is not reflected as markup
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: <img src=x>{{RUN_ID}}
+    expected: HTML in email
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: Throw-away password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form
+  - action: expect_count
+    target:
+      css: img[src=x]
+    expected: No injected image element exists
+    equals: 0

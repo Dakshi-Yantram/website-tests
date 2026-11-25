@@ -1,0 +1,46 @@
+version: 1
+workflows:
+- id: nc_part_03_profile_shows_sos_emergency_contacts
+  app: nurseconnect
+  title: 'Partner: profile page shows the SOS emergency-contacts card (no SOS is sent)'
+  description: Logged in as nurse. The SOS safety feature lives on active visits (POST
+    /api/bookings/<id>/sos) and the nurse SOS API. Those alert the real safety team,
+    so this workflow only checks the emergency-contacts card on the profile. It never
+    clicks any SOS control.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - e2e
+  - partner
+  - sos
+  preconditions:
+  - NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse
+  expected_outcome:
+  - Emergency-contacts card is shown
+  - No SOS or contact write is sent
+  sources:
+  - file: frontend/src/routes/_app.partner.profile.tsx
+  - file: frontend/src/routes/../components/partner/EmergencyContactsCard.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /partner/profile
+    expected: /partner/profile responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: My Profile
+    expected: Heading 'My Profile' is shown
+  - action: expect_visible
+    target:
+      test_id: emergency-contacts-card
+    expected: Emergency contacts card is present
+    timeout_ms: 25000
+  - action: expect_visible
+    target:
+      text: If you press SOS
+    expected: Card explains what SOS does
+  - action: expect_no_writes_sent
+    expected: Nothing was written

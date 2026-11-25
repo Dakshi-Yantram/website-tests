@@ -101,6 +101,7 @@ AGENT_ROLES = {
     "operations": Role("operations", "nurseconnect", "OPS_EMAIL", "OPS_PASSWORD", "OPS_LANDING_PATH", ""),
     "reviewer": Role("reviewer", "nurseconnect", "REVIEWER_EMAIL", "REVIEWER_PASSWORD", "REVIEWER_LANDING_PATH", ""),
     "admin": Role("admin", "nurseconnect", "ADMIN_EMAIL", "ADMIN_PASSWORD", "ADMIN_LANDING_PATH", ""),
+    "support": Role("support", "nurseconnect", "SUPPORT_EMAIL", "SUPPORT_PASSWORD", "SUPPORT_LANDING_PATH", ""),
     # HIMS roles are available only to the YAML agent, so legacy parameterized tests stay unchanged.
     "lab": Role("lab", "hospital", "HIMS_LAB_EMAIL", "HIMS_LAB_PASSWORD"),
     "radiology": Role("radiology", "hospital", "HIMS_RADIOLOGY_EMAIL", "HIMS_RADIOLOGY_PASSWORD"),

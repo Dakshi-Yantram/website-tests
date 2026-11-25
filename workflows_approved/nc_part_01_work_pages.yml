@@ -1,0 +1,91 @@
+version: 1
+workflows:
+- id: nc_part_01_work_pages
+  app: nurseconnect
+  title: 'Partner: workspace, assignments, availability, visits, documentation, care
+    packages'
+  description: Logged in as nurse. The test nurse must be approved; an unapproved
+    nurse sees the onboarding gate instead of these pages.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - e2e
+  - partner
+  - nurse
+  preconditions:
+  - NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse
+  expected_outcome:
+  - Every work page opens with its own content
+  sources:
+  - file: frontend/src/routes/_app.partner.index.tsx
+  - file: frontend/src/routes/_app.partner.assignments.tsx
+  - file: frontend/src/routes/_app.partner.availability.tsx
+  - file: frontend/src/routes/_app.partner.visits.index.tsx
+  - file: frontend/src/routes/_app.partner.documentation.tsx
+  - file: frontend/src/routes/_app.partner.services.tsx
+  timeout_ms: 45000
+  steps:
+  - action: goto
+    path: /partner
+    expected: /partner responds
+  - action: expect_url
+    contains: /partner
+    expected: URL still contains /partner (no redirect to login)
+  - action: expect_visible
+    target:
+      text: workspace overview for today
+    expected: '''workspace overview for today'' is shown'
+  - action: goto
+    path: /partner/assignments
+    expected: /partner/assignments responds
+  - action: expect_url
+    contains: /partner/assignments
+    expected: URL still contains /partner/assignments (no redirect to login)
+  - action: expect_visible
+    target:
+      text: New Requests
+    expected: '''New Requests'' is shown'
+  - action: goto
+    path: /partner/availability
+    expected: /partner/availability responds
+  - action: expect_url
+    contains: /partner/availability
+    expected: URL still contains /partner/availability (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Right now
+    expected: '''Right now'' is shown'
+  - action: goto
+    path: /partner/visits
+    expected: /partner/visits responds
+  - action: expect_url
+    contains: /partner/visits
+    expected: URL still contains /partner/visits (no redirect to login)
+  - action: expect_visible
+    target:
+      text: My Visits
+    expected: '''My Visits'' is shown'
+  - action: goto
+    path: /partner/documentation
+    expected: /partner/documentation responds
+  - action: expect_url
+    contains: /partner/documentation
+    expected: URL still contains /partner/documentation (no redirect to login)
+  - action: expect_visible
+    target:
+      text: My Documents
+    expected: '''My Documents'' is shown'
+  - action: goto
+    path: /partner/services
+    expected: /partner/services responds
+  - action: expect_url
+    contains: /partner/services
+    expected: URL still contains /partner/services (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Care Packages I Can Provide
+    expected: '''Care Packages I Can Provide'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

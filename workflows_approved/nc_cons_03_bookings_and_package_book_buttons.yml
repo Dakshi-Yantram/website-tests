@@ -1,0 +1,57 @@
+version: 1
+workflows:
+- id: nc_cons_03_bookings_and_package_book_buttons
+  app: nurseconnect
+  title: 'Consumer: /consumer/bookings lists care packages with real Book buttons'
+  description: 'Logged in as consumer. Replaces the old consumer_booking_flow_readonly
+    check: ''Book'' on this page is a BUTTON whose accessible name is exactly ''Book'',
+    so it is matched with exact: true. A non-exact name would also match the ''New
+    Booking'' button and the ''Bookings'' sidebar link and could never fail.'
+  status: approved
+  risk: medium
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - booking
+  - critical-candidate
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  - At least one active care package
+  expected_outcome:
+  - Booking entry points exist
+  - No booking is created
+  sources:
+  - file: frontend/src/routes/_app.consumer.bookings.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /consumer/bookings
+    expected: /consumer/bookings responds
+  - action: expect_url
+    contains: /consumer/bookings
+    expected: URL still contains /consumer/bookings (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Booking journey
+    expected: '''Booking journey'' is shown'
+  - action: expect_visible
+    target:
+      role: button
+      name: New Booking
+      exact: true
+    expected: New Booking button is available
+  - action: expect_count
+    target:
+      role: button
+      name: Book
+      exact: true
+    min: 1
+    expected: At least one care package has a Book button
+    timeout_ms: 25000
+    severity: High
+  - action: expect_authenticated
+    expected: Session is still signed in
+  - action: expect_no_writes_sent
+    expected: Nothing was written

@@ -1,0 +1,31 @@
+version: 1
+workflows:
+- id: edge_10_nurse_unknown_visit_id
+  app: nurseconnect
+  title: 'Edge: opening a visit id that does not exist shows a clean ''not found'',
+    no crash'
+  description: Read-only. The path is a guess; adjust it to the real visit URL pattern.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Graceful handling of unknown ids
+  steps:
+  - action: goto
+    path: /partner/visits/{{RUN_ID}}-does-not-exist
+    expected: 'Open a non-existent visit  # VERIFY path'
+    optional: true
+  - action: expect_text
+    matches: not found|no visit|does not exist|unavailable|404
+    expected: Clean not-found message
+    optional: true
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page

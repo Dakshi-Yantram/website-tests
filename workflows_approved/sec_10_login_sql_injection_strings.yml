@@ -1,0 +1,54 @@
+version: 1
+workflows:
+- id: sec_10_login_sql_injection_strings
+  app: nurseconnect
+  title: 'Security: SQL-injection style input does not log in and does not leak errors'
+  description: Classic strings in both fields. The login form must stay, with a generic
+    message and no database error text.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - No valid credentials used
+  expected_outcome:
+  - Login refused cleanly
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path (NURSECONNECT_LOGIN_PATH)'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: QA_INJECTION_EMAIL
+    expected: Injection string in email
+  - action: fill
+    target:
+      css: input[type="password"]
+    value_env: QA_INJECTION_PASSWORD
+    expected: Injection string in password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form (not authenticated)
+  - action: expect_hidden
+    target:
+      text: syntax error
+    expected: No SQL error text
+  - action: expect_hidden
+    target:
+      text: SQLSTATE
+    expected: No SQL state text
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+  - action: expect_no_writes_sent
+    expected: Nothing was written

@@ -1,0 +1,31 @@
+version: 1
+workflows:
+- id: edge_11_consumer_unknown_route
+  app: nurseconnect
+  title: 'Edge: an unknown customer page shows a clean 404, not a blank page or stack
+    trace'
+  description: Read-only.
+  status: approved
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Graceful 404
+  steps:
+  - action: goto
+    path: /consumer/{{RUN_ID}}-nope
+    expected: Open a non-existent page
+    optional: true
+  - action: expect_text
+    matches: not found|404|doesn't exist|does not exist
+    expected: Clean 404 page
+    optional: true
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page

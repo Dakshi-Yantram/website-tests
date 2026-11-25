@@ -1,0 +1,65 @@
+version: 1
+workflows:
+- id: nc_rbac_03_nurse_blocked_from_other_portals
+  app: nurseconnect
+  title: 'RBAC: nurse cannot open consumer, admin, operations or support pages'
+  description: Logged in as nurse (partner). Consumer, admin finance, operations and
+    support pages must show the Unauthorized boundary.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - security
+  - rbac
+  preconditions:
+  - NURSE_EMAIL / NURSE_PASSWORD set for a test account
+  expected_outcome:
+  - Unauthorized boundary on every non-partner route
+  sources:
+  - file: frontend/src/routes/../components/layout/AppShell.tsx
+  - file: frontend/src/routes/../lib/rbac.ts
+  timeout_ms: 45000
+  steps:
+  - action: goto
+    path: /consumer/bookings
+    expected: Open /consumer/bookings with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /dashboard
+    expected: Open /dashboard with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /payout-approvals
+    expected: Open /payout-approvals with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /operations/staff
+    expected: Open /operations/staff with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /sos-incidents
+    expected: Open /sos-incidents with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: Nothing was written

@@ -1,0 +1,95 @@
+version: 1
+workflows:
+- id: nc_admin_02_nurse_and_onboarding_approval_queues
+  app: nurseconnect
+  title: 'Admin: nurse approval, onboarding review, provider agreements, prescription
+    review, reviewer management, background check'
+  description: Logged in as admin. Opens the approval queues only. Approve / reject
+    buttons are never clicked.
+  status: approved
+  risk: medium
+  writes: false
+  role: admin
+  tags:
+  - e2e
+  - admin
+  - approvals
+  preconditions:
+  - ADMIN_EMAIL / ADMIN_PASSWORD set for a test account
+  expected_outcome:
+  - All approval queues open
+  - No approval state changes
+  sources:
+  - file: frontend/src/routes/_app.nurse-approval.tsx
+  - file: frontend/src/routes/_app.onboarding-review.tsx
+  - file: frontend/src/routes/_app.provider-agreements.tsx
+  - file: frontend/src/routes/_app.prescription-review.tsx
+  - file: frontend/src/routes/_app.reviewer-management.tsx
+  - file: frontend/src/routes/_app.background-verification.tsx
+  timeout_ms: 60000
+  steps:
+  - action: goto
+    path: /nurse-approval
+    expected: /nurse-approval responds
+  - action: expect_url
+    contains: /nurse-approval
+    expected: URL still contains /nurse-approval (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: My Review Queue
+    expected: Heading 'My Review Queue' is shown
+  - action: goto
+    path: /onboarding-review
+    expected: /onboarding-review responds
+  - action: expect_url
+    contains: /onboarding-review
+    expected: URL still contains /onboarding-review (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Applications in Pipeline
+    expected: '''Applications in Pipeline'' is shown'
+  - action: goto
+    path: /provider-agreements
+    expected: /provider-agreements responds
+  - action: expect_url
+    contains: /provider-agreements
+    expected: URL still contains /provider-agreements (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Provider Agreements
+    expected: Heading 'Provider Agreements' is shown
+  - action: goto
+    path: /prescription-review
+    expected: /prescription-review responds
+  - action: expect_url
+    contains: /prescription-review
+    expected: URL still contains /prescription-review (no redirect to login)
+  - action: expect_visible
+    target:
+      css: main
+    expected: Page shell renders
+  - action: goto
+    path: /reviewer-management
+    expected: /reviewer-management responds
+  - action: expect_url
+    contains: /reviewer-management
+    expected: URL still contains /reviewer-management (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Reviewer Management
+    expected: Heading 'Reviewer Management' is shown
+  - action: goto
+    path: /background-verification
+    expected: /background-verification responds
+  - action: expect_url
+    contains: /background-verification
+    expected: URL still contains /background-verification (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Verification Queue
+    expected: '''Verification Queue'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

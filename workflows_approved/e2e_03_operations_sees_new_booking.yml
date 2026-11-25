@@ -1,0 +1,27 @@
+version: 1
+workflows:
+- id: e2e_03_operations_sees_new_booking
+  app: nurseconnect
+  title: 'Operations: the customer''s new booking appears in the operations queue'
+  description: Customer -> Operations hand-off. Read-only.
+  status: approved
+  risk: low
+  writes: false
+  role: operations
+  tags:
+  - chain
+  preconditions:
+  - e2e_01 ran in the same run
+  - OPS_EMAIL / OPS_PASSWORD set
+  expected_outcome:
+  - Booking is visible to operations
+  steps:
+  - action: open_section
+    pattern: booking|request|order|queue|dashboard
+    expected: 'Operations queue opens  # VERIFY menu name'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: New booking visible to operations
+  - action: screenshot
+    name: e2e_03_ops_queue
+    expected: Evidence screenshot (masked)

@@ -1,0 +1,64 @@
+version: 1
+workflows:
+- id: nc_pub_02_catalog_list_and_package_detail
+  app: nurseconnect
+  title: 'Public: /packages and /services list items; first package opens its detail
+    page'
+  description: Anonymous. Package cards link to /packages/<id>. Opens the first card
+    and checks the detail page offers Book Now (or Enquire now for packages not yet
+    open for online booking). Does not click Book.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - public
+  - catalog
+  preconditions:
+  - At least one active public care package exists
+  expected_outcome:
+  - Catalogue is populated
+  - Detail page opens
+  - No booking is started
+  sources:
+  - file: frontend/src/routes/packages.index.tsx
+  - file: frontend/src/routes/packages.$packageId.tsx
+  - file: frontend/src/routes/services.index.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /packages
+    expected: /packages responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: Our Care Packages
+    expected: Heading 'Our Care Packages' is shown
+  - action: expect_count
+    target:
+      css: a[href*='/packages/']
+    min: 1
+    expected: At least one package card links to a detail page
+    timeout_ms: 25000
+  - action: goto
+    path: /services
+    expected: /services responds
+  - action: expect_visible
+    target:
+      text: Healthcare services
+    expected: '''Healthcare services'' is shown'
+  - action: goto
+    path: /packages
+    expected: /packages responds
+  - action: click
+    target:
+      css: a[href*='/packages/']
+    expected: Open the first package
+  - action: expect_url
+    matches: /packages/[^/?#]+
+    expected: Package detail URL
+  - action: expect_text
+    matches: book now|enquire now
+    expected: Detail page offers a booking entry point
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: Nothing was written

@@ -1,0 +1,70 @@
+version: 1
+workflows:
+- id: nc_admin_05_catalogue_admin
+  app: nurseconnect
+  title: 'Admin: care packages, service catalogue, clinical rule sets, roles and permissions'
+  description: Logged in as admin. View only; no package, price or role is edited.
+  status: approved
+  risk: low
+  writes: false
+  role: admin
+  tags:
+  - e2e
+  - admin
+  - catalogue
+  preconditions:
+  - ADMIN_EMAIL / ADMIN_PASSWORD set for a test account
+  expected_outcome:
+  - Catalogue admin pages open
+  sources:
+  - file: frontend/src/routes/_app.care-packages.tsx
+  - file: frontend/src/routes/_app.services-catalogue.tsx
+  - file: frontend/src/routes/_app.clinical-rule-sets.tsx
+  - file: frontend/src/routes/_app.roles-permissions.tsx
+  timeout_ms: 45000
+  steps:
+  - action: goto
+    path: /care-packages
+    expected: /care-packages responds
+  - action: expect_url
+    contains: /care-packages
+    expected: URL still contains /care-packages (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Care Packages
+    expected: Heading 'Care Packages' is shown
+  - action: goto
+    path: /services-catalogue
+    expected: /services-catalogue responds
+  - action: expect_url
+    contains: /services-catalogue
+    expected: URL still contains /services-catalogue (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Service Catalogue
+    expected: Heading 'Service Catalogue' is shown
+  - action: goto
+    path: /clinical-rule-sets
+    expected: /clinical-rule-sets responds
+  - action: expect_url
+    contains: /clinical-rule-sets
+    expected: URL still contains /clinical-rule-sets (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Rule Sets
+    expected: '''Rule Sets'' is shown'
+  - action: goto
+    path: /roles-permissions
+    expected: /roles-permissions responds
+  - action: expect_url
+    contains: /roles-permissions
+    expected: URL still contains /roles-permissions (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Roles & Permissions
+    expected: Heading 'Roles & Permissions' is shown
+  - action: expect_no_writes_sent
+    expected: Nothing was written
