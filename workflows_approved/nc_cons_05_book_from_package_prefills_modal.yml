@@ -27,6 +27,13 @@ workflows:
   - action: goto
     path: /consumer/bookings
     expected: /consumer/bookings responds
+  - action: wait_for
+    ms: 3000
+    expected: Let page-load pop-ups appear
+  - action: press
+    key: Escape
+    expected: Dismiss any auto-opened dialog (for example the rate-your-nurse prompt);
+      a no-op otherwise
   - action: guarded_submit
     target:
       role: button

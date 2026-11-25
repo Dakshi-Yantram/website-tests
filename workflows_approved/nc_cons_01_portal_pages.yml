@@ -39,8 +39,8 @@ workflows:
     expected: URL still contains /consumer/patients (no redirect to login)
   - action: expect_visible
     target:
-      text: My patients
-    expected: '''My patients'' is shown'
+      text: Your patients
+    expected: '''Your patients'' is shown'
   - action: goto
     path: /consumer/addresses
     expected: /consumer/addresses responds

@@ -1,0 +1,67 @@
+version: 1
+workflows:
+- id: nc_cons_02_payments_notifications_profile
+  app: nurseconnect
+  title: 'Consumer: payment history, notifications and profile/security open'
+  description: Logged in as consumer. Payment history is read-only; the agent never
+    clicks pay, checkout or refund.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - payments
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  expected_outcome:
+  - Pages open
+  - No payment action is triggered
+  sources:
+  - file: frontend/src/routes/_app.consumer.payments.tsx
+  - file: frontend/src/routes/_app.consumer.notifications.tsx
+  - file: frontend/src/routes/_app.consumer.profile_.tsx
+  timeout_ms: 40000
+  steps:
+  - action: goto
+    path: /consumer/payments
+    expected: /consumer/payments responds
+  - action: expect_url
+    contains: /consumer/payments
+    expected: URL still contains /consumer/payments (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Recent charges
+    expected: '''Recent charges'' is shown'
+  - action: goto
+    path: /consumer/notifications
+    expected: /consumer/notifications responds
+  - action: expect_url
+    contains: /consumer/notifications
+    expected: URL still contains /consumer/notifications (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Notifications
+    expected: Heading 'Notifications' is shown
+  - action: goto
+    path: /consumer/profile
+    expected: /consumer/profile responds
+  - action: expect_url
+    contains: /consumer/profile
+    expected: URL still contains /consumer/profile (no redirect to login)
+  - action: expect_visible
+    target:
+      role: button
+      name: Personal Information
+      exact: true
+    expected: Profile menu offers Personal Information
+  - action: expect_visible
+    target:
+      role: button
+      name: Account Settings
+      exact: true
+    expected: Profile menu offers Account Settings
+  - action: expect_no_writes_sent
+    expected: Nothing was written

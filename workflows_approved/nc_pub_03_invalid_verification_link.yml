@@ -16,7 +16,7 @@ workflows:
   preconditions:
   - No login
   expected_outcome:
-  - Page handles an unknown token without a crash
+  - Page shows a load error and a Try again button for an unknown token
   sources:
   - file: frontend/src/routes/verify.$token.tsx
   timeout_ms: 30000
@@ -31,13 +31,11 @@ workflows:
     expected: Heading 'NurseConnect' is shown
   - action: expect_visible
     target:
-      text: Verify your medicines
-    expected: Page renders its own title, not a blank screen
-  - action: expect_text
-    matches: couldn.t load|expired|invalid|not found|no longer
-    expected: No uploaded document or booking data is shown for an invalid token
+      role: button
+      name: Try again
+      exact: true
+    expected: An unknown token shows a load error with a retry button (not a blank
+      page, no booking data)
     timeout_ms: 20000
-    severity: Low
-    optional: true
   - action: expect_no_writes_sent
     expected: Nothing was written

@@ -1,0 +1,105 @@
+version: 1
+workflows:
+- id: nc_cons_04_new_booking_modal_opens_writes_blocked
+  app: nurseconnect
+  title: 'Consumer: New Booking modal opens (every non-GET request blocked)'
+  description: 'Logged in as consumer. Clicks New Booking with all writes blocked
+    at the network layer and checks the modal title. Stops there: no field is filled
+    and nothing is submitted.'
+  status: draft
+  risk: medium
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - booking
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  expected_outcome:
+  - Modal opens
+  - No booking is created
+  sources:
+  - file: frontend/src/routes/_app.consumer.bookings.tsx
+  - file: frontend/src/routes/../components/booking/NewBookingModal.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /consumer/bookings
+    expected: /consumer/bookings responds
+  - action: expect_visible
+    target:
+      text: Booking journey
+    expected: '''Booking journey'' is shown'
+  - action: wait_for
+    ms: 3000
+    expected: Let page-load pop-ups appear
+  - action: press
+    key: Escape
+    expected: Dismiss any auto-opened dialog (for example the rate-your-nurse prompt);
+      a no-op otherwise
+  - action: guarded_submit
+    target:
+      role: button
+      name: New Booking
+      exact: true
+    expected: Click New Booking with every write blocked
+  - action: expect_visible
+    target:
+      text: New care booking
+    expected: Booking modal is open
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: No write reached the server
+  - action: expect_authenticated
+    expected: Session is still signed in
+- id: nc_cons_05_book_from_package_prefills_modal
+  app: nurseconnect
+  title: 'Consumer: Book on a package card opens the pre-filled booking modal (writes
+    blocked)'
+  description: Logged in as consumer. Clicks the first package Book button with all
+    writes blocked; the same booking modal must open.
+  status: draft
+  risk: medium
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - booking
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  - At least one active care package
+  expected_outcome:
+  - Modal opens
+  - No booking is created
+  sources:
+  - file: frontend/src/routes/_app.consumer.bookings.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /consumer/bookings
+    expected: /consumer/bookings responds
+  - action: wait_for
+    ms: 3000
+    expected: Let page-load pop-ups appear
+  - action: press
+    key: Escape
+    expected: Dismiss any auto-opened dialog (for example the rate-your-nurse prompt);
+      a no-op otherwise
+  - action: guarded_submit
+    target:
+      role: button
+      name: Book
+      exact: true
+    expected: Click Book on the first package with every write blocked
+    timeout_ms: 25000
+  - action: expect_visible
+    target:
+      text: New care booking
+    expected: Booking modal opens for that package
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: No write reached the server
+  - action: expect_authenticated
+    expected: Session is still signed in
