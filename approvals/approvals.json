@@ -18,110 +18,11 @@
       "risk": "low",
       "writes": false
     },
-    "e2e_02_customer_sees_booking_after_reload": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "036689c1d1c13dd36dcd988adf07d6921852230576de0d7b1b139bee9ba4499b",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_03_operations_sees_new_booking": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "027fb269681f35793c51aa0fdc731bca9067c63a6d8b7b106c41840b012f6c1f",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_05_nurse_sees_assignment": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "f020fd2f63c93d10a2b1cfea06c993f74d7fe195e1055d4091282347fbac1619",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_09_reviewer_sees_submission": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "10c51cd694d8c4d7dc66d47d26beb8cb223f9043a3a5ac14fc7207c46a2de24b",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_11_nurse_sees_review_feedback": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "63e18b4328d6269a6e91ae0d27cd70f6e353896ada387e4d631079d5eebc0644",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_14_customer_sees_completed_visit_summary": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "f95238fe4a2f337c8611f9de72caa223dd599b89b9171dead9e4c50708872bff",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "e2e_15_admin_sees_nurse_and_activity": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "3c90bac36f7d057c0d712e7e4036743f9f51051d47e0996e88aabd9e4fb4ffc3",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
     "e2e_16_nurse_access_matches_admin_status": {
       "app": "nurseconnect",
       "approved_at": "2026-11-25T06:50:38+00:00",
       "approved_by": "Dakshi",
       "hash": "e9cf1ef88af03a601e5f307d426b3a4928b2903d880dfc37c69c03a58caafdde",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "edge_01_booking_empty_required_fields": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "aeac4244348b2bc32238c88861b27acfd0003d75e16c6c78cf14f066e79d11d3",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "edge_02_booking_malformed_phone": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "293bfa5b3abeaa1c901c043196fb7c1ed9b66c83147e5ea0e4c7a4497bb23816",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "edge_03_booking_very_long_text": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "411e26971f7d5b88c3202ac871251cba2690c8c9e49adfddf7605c4e798f8cfb",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "edge_08_nurse_empty_documentation_rejected": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "d1da1744cdcf9f4088920fa32a40c474ac11338d0ab1f561da4c3ae9bb77bc0f",
       "reason": "Read-only edge and security checks",
       "risk": "low",
       "writes": false
@@ -465,42 +366,6 @@
       "approved_by": "Dakshi",
       "hash": "2db9986c38fcf772806d06ad0cb0b351a5e69212c6d46d3570be4b230757efe9",
       "reason": "Read-only anonymous access check on staging",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_04_customer_cannot_open_nurse_area": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "77c75d9a31a5e1f677a60fc387961a4372534d836851a121c71197cd5b1bdcd0",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_05_nurse_cannot_open_customer_area": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "a734683192772fb00124f5ee7f2d7b073331fd73d51332200313f5aa349cd0aa",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_06_customer_cannot_open_staff_areas": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "8402c529ce717f21116a7ac622c32e4b7e27199fae80610d2dec1e8dfcdc284c",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_07_nurse_cannot_open_staff_areas": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "2b8ab54ed7e3028e825c9c77a4a3c4c17cd5712d7e59c609d1313d00ac5a81d4",
-      "reason": "Read-only edge and security checks",
       "risk": "low",
       "writes": false
     },
