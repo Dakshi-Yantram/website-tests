@@ -1,0 +1,851 @@
+# NurseConnect agent suite - qa_agent schema v1 (see qa_agent/schema.py + qa_agent/runner.py + docs/WORKFLOW_SCHEMA.md)
+#
+# Replaces the Gemini draft. That draft used a different schema (api_request, assert_visible, expect_url_contains, login/account,
+# full URLs, ${ENV} placeholders, top-level app/name/environments/accounts) that qa_agent rejects at load time.
+#
+# Rules this file follows (all enforced by `python agent.py validate --file <this file>`):
+#   * top level is only `version: 1` + `workflows`
+#   * ids match ^[a-z0-9][a-z0-9_-]{2,63}$ and do not collide with workflows.yml, workflows_approved/ or workflow_drafts/
+#   * every workflow is `status: draft`; it cannot run until approved:  python agent.py approve --draft <this file> ...
+#   * every workflow is `writes: false`: nothing is created, approved, released, paid or sent. Clicks that open modals use
+#     guarded_submit (all non-GET requests blocked at the network layer).
+#   * credentials come only from the environment via the role (NURSE_EMAIL, CONSUMER_EMAIL, ADMIN_EMAIL, OPS_EMAIL, REVIEWER_EMAIL,
+#     SUPPORT_EMAIL and their *_PASSWORD). No URL, host, phone number or password is written in this file.
+#   * HTTP/API checks are NOT possible in this schema (the runner has no request action). Use the PowerShell API smoke in the answer.
+#
+# NOT AUTOMATED ON PURPOSE: payments (agent refuses pay/checkout/refund), real SOS alerts, approve/reject/release buttons.
+version: 1
+workflows:
+
+  # ====================================================================================================
+  # 1. PUBLIC PAGES (anonymous, read-only)
+  # ====================================================================================================
+
+  - id: nc_pub_01_home_and_info_pages
+    app: nurseconnect
+    title: 'Public: home, about, contact and privacy pages render'
+    description: 'Anonymous. Opens each public marketing page and checks a heading that only that page has. Read-only.'
+    status: draft
+    risk: low
+    writes: false
+    tags: [public, smoke]
+    preconditions: ['Public pages reachable']
+    expected_outcome: ['Every public page shows its own heading', 'No write request is sent']
+    sources:
+      - {file: frontend/src/routes/index.tsx}
+      - {file: frontend/src/routes/about.tsx}
+      - {file: frontend/src/routes/contact.tsx}
+      - {file: frontend/src/routes/privacy-policy.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/', expected: '/ responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Our Care Packages'}, expected: 'Home page shows the care-package section'}
+      - {action: goto, path: '/about', expected: '/about responds'}
+      - {action: expect_visible, target: {text: 'Why Families Choose NurseConnect'}, expected: '''Why Families Choose NurseConnect'' is shown'}
+      - {action: goto, path: '/contact', expected: '/contact responds'}
+      - {action: expect_visible, target: {text: 'Send us a message'}, expected: '''Send us a message'' is shown'}
+      - {action: goto, path: '/privacy-policy', expected: '/privacy-policy responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Privacy Policy'}, expected: 'Heading ''Privacy Policy'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_pub_02_catalog_list_and_package_detail
+    app: nurseconnect
+    title: 'Public: /packages and /services list items; first package opens its detail page'
+    description: 'Anonymous. Package cards link to /packages/<id>. Opens the first card and checks the detail page offers Book Now (or Enquire now for packages not yet open for online booking). Does not click Book.'
+    status: draft
+    risk: low
+    writes: false
+    tags: [public, catalog]
+    preconditions: ['At least one active public care package exists']
+    expected_outcome: ['Catalogue is populated', 'Detail page opens', 'No booking is started']
+    sources:
+      - {file: frontend/src/routes/packages.index.tsx}
+      - {file: frontend/src/routes/packages.$packageId.tsx}
+      - {file: frontend/src/routes/services.index.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/packages', expected: '/packages responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Our Care Packages'}, expected: 'Heading ''Our Care Packages'' is shown'}
+      - {action: expect_count, target: {css: 'a[href*=''/packages/'']'}, min: 1, expected: 'At least one package card links to a detail page', timeout_ms: 25000}
+      - {action: goto, path: '/services', expected: '/services responds'}
+      - {action: expect_visible, target: {text: 'Healthcare services'}, expected: '''Healthcare services'' is shown'}
+      - {action: goto, path: '/packages', expected: '/packages responds'}
+      - {action: click, target: {css: 'a[href*=''/packages/'']'}, expected: 'Open the first package'}
+      - {action: expect_url, matches: '/packages/[^/?#]+', expected: 'Package detail URL'}
+      - {action: expect_text, matches: 'book now|enquire now', expected: 'Detail page offers a booking entry point', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_pub_03_invalid_verification_link
+    app: nurseconnect
+    title: 'Public: an invalid /verify/<token> link fails safely'
+    description: 'Anonymous. The medicine-verification page is token-only (no login). A made-up token must not crash the page or expose a booking. Read-only (GET /api/verify/<token> only; no upload is attempted).'
+    status: draft
+    risk: low
+    writes: false
+    tags: [public, verification, security]
+    preconditions: ['No login']
+    expected_outcome: ['Page handles an unknown token without a crash']
+    sources:
+      - {file: frontend/src/routes/verify.$token.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/verify/qa-invalid-token-0000', expected: '/verify/qa-invalid-token-0000 responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'NurseConnect'}, expected: 'Heading ''NurseConnect'' is shown'}
+      - {action: expect_visible, target: {text: 'Verify your medicines'}, expected: 'Page renders its own title, not a blank screen'}
+      - {action: expect_text, matches: 'couldn.t load|expired|invalid|not found|no longer', expected: 'No uploaded document or booking data is shown for an invalid token', timeout_ms: 20000, severity: Low, optional: true}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+
+  # ====================================================================================================
+  # 2. AUTH + RBAC ISOLATION
+  # ====================================================================================================
+
+  - id: nc_rbac_01_anonymous_redirected_to_login
+    app: nurseconnect
+    title: 'RBAC: anonymous visitor is sent to /auth/login for protected consumer, partner, ops, finance and support routes'
+    description: 'No login. Each protected route must show the login form (and a /auth/login URL), never data.'
+    status: draft
+    risk: low
+    writes: false
+    tags: [security, rbac, smoke]
+    preconditions: ['No login']
+    expected_outcome: ['Login form on every protected route', 'No write request is sent']
+    sources:
+      - {file: frontend/src/routes/_app.tsx}
+      - {file: frontend/src/routes/auth.login.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/consumer/bookings', expected: 'Open /consumer/bookings anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: goto, path: '/partner/visits', expected: 'Open /partner/visits anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: goto, path: '/ops-dashboard', expected: 'Open /ops-dashboard anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: goto, path: '/payout-approvals', expected: 'Open /payout-approvals anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: goto, path: '/sos-incidents', expected: 'Open /sos-incidents anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: goto, path: '/support-desk', expected: 'Open /support-desk anonymously'}
+      - {action: expect_visible, target: {css: 'input[type="password"]'}, expected: 'Login form is shown instead of the page', timeout_ms: 20000}
+      - {action: expect_url, contains: '/auth/login', expected: 'Redirected to the login route'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rbac_02_consumer_blocked_from_other_portals
+    app: nurseconnect
+    title: 'RBAC: consumer cannot open partner, admin, operations or support pages'
+    description: 'Logged in as consumer. Every other portal must render the Unauthorized boundary in place (URL is kept).'
+    status: draft
+    risk: low
+    writes: false
+    role: consumer
+    tags: [security, rbac]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account']
+    expected_outcome: ['Unauthorized boundary on every non-consumer route']
+    sources:
+      - {file: frontend/src/routes/../components/layout/AppShell.tsx}
+      - {file: frontend/src/routes/../lib/rbac.ts}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/partner', expected: 'Open /partner with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/payout-approvals', expected: 'Open /payout-approvals with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/ops-dashboard', expected: 'Open /ops-dashboard with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/operations/staff', expected: 'Open /operations/staff with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/sos-incidents', expected: 'Open /sos-incidents with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rbac_03_nurse_blocked_from_other_portals
+    app: nurseconnect
+    title: 'RBAC: nurse cannot open consumer, admin, operations or support pages'
+    description: 'Logged in as nurse (partner). Consumer, admin finance, operations and support pages must show the Unauthorized boundary.'
+    status: draft
+    risk: low
+    writes: false
+    role: nurse
+    tags: [security, rbac]
+    preconditions: ['NURSE_EMAIL / NURSE_PASSWORD set for a test account']
+    expected_outcome: ['Unauthorized boundary on every non-partner route']
+    sources:
+      - {file: frontend/src/routes/../components/layout/AppShell.tsx}
+      - {file: frontend/src/routes/../lib/rbac.ts}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/consumer/bookings', expected: 'Open /consumer/bookings with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/dashboard', expected: 'Open /dashboard with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/payout-approvals', expected: 'Open /payout-approvals with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/operations/staff', expected: 'Open /operations/staff with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/sos-incidents', expected: 'Open /sos-incidents with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rbac_04_admin_blocked_from_support_and_other_portals
+    app: nurseconnect
+    title: 'RBAC: admin cannot open the support console (SOS / chats) or the consumer, partner and operations portals'
+    description: 'Logged in as admin. In rbac.ts the admin role has no support.queue permission, so /sos-incidents and /support-desk belong to the support role only. Admin must see the Unauthorized boundary there.'
+    status: draft
+    risk: low
+    writes: false
+    role: admin
+    tags: [security, rbac]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['Unauthorized boundary on every non-admin-portal route']
+    sources:
+      - {file: frontend/src/routes/../lib/rbac.ts}
+      - {file: frontend/src/routes/_app.sos-incidents.tsx}
+      - {file: frontend/src/routes/_app.support-desk.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/sos-incidents', expected: 'Open /sos-incidents with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/support-desk', expected: 'Open /support-desk with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/consumer/bookings', expected: 'Open /consumer/bookings with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/partner/visits', expected: 'Open /partner/visits with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/operations/staff', expected: 'Open /operations/staff with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rbac_05_reviewer_scope
+    app: nurseconnect
+    title: 'RBAC: reviewer sees review queues but not finance, audit or patient lists'
+    description: 'Logged in as reviewer. Allowed: nurse approval, onboarding review. Blocked: payout approvals, audit logs, patient list (reviewer has no users.view / finance / compliance permission).'
+    status: draft
+    risk: low
+    writes: false
+    role: reviewer
+    tags: [security, rbac]
+    preconditions: ['REVIEWER_EMAIL / REVIEWER_PASSWORD set for a test account']
+    expected_outcome: ['Review pages open', 'Finance, audit and patient pages are blocked']
+    sources:
+      - {file: frontend/src/routes/../lib/rbac.ts}
+      - {file: frontend/src/routes/_app.nurse-approval.tsx}
+      - {file: frontend/src/routes/_app.onboarding-review.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/nurse-approval', expected: '/nurse-approval responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'My Review Queue'}, expected: 'Heading ''My Review Queue'' is shown'}
+      - {action: goto, path: '/onboarding-review', expected: '/onboarding-review responds'}
+      - {action: expect_visible, target: {text: 'Applications in Pipeline'}, expected: '''Applications in Pipeline'' is shown'}
+      - {action: goto, path: '/payout-approvals', expected: 'Open /payout-approvals with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/audit-logs', expected: 'Open /audit-logs with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/users/patients', expected: 'Open /users/patients with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rbac_06_operations_scope
+    app: nurseconnect
+    title: 'RBAC: operations sees staff accounts and FAQ management but not admin dashboards or payouts'
+    description: 'Logged in as operations. Allowed: /operations/staff, /operations/faq. Blocked: /dashboard, /payout-approvals.'
+    status: draft
+    risk: low
+    writes: false
+    role: operations
+    tags: [security, rbac]
+    preconditions: ['OPS_EMAIL / OPS_PASSWORD set for a test account']
+    expected_outcome: ['Operations pages open', 'Admin pages are blocked']
+    sources:
+      - {file: frontend/src/routes/../lib/rbac.ts}
+      - {file: frontend/src/routes/_app.operations.staff.tsx}
+      - {file: frontend/src/routes/_app.operations.faq.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/operations/staff', expected: '/operations/staff responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Staff Accounts'}, expected: 'Heading ''Staff Accounts'' is shown'}
+      - {action: goto, path: '/operations/faq', expected: '/operations/faq responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'FAQ Management'}, expected: 'Heading ''FAQ Management'' is shown'}
+      - {action: goto, path: '/dashboard', expected: 'Open /dashboard with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: goto, path: '/payout-approvals', expected: 'Open /payout-approvals with the wrong role'}
+      - {action: expect_visible, target: {text: 'You don''t have access to this module'}, expected: 'Unauthorized boundary is shown (role/portal isolation)', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+
+  # ====================================================================================================
+  # 3. CONSUMER: PORTAL, BOOKINGS, PAYMENTS, VERIFICATION ENTRY POINTS (no booking is created, nothing is paid)
+  # ====================================================================================================
+
+  - id: nc_cons_01_portal_pages
+    app: nurseconnect
+    title: 'Consumer: home, patients and saved addresses open'
+    description: 'Logged in as consumer. Read-only page loads.'
+    status: draft
+    risk: low
+    writes: false
+    role: consumer
+    tags: [e2e, consumer]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account']
+    expected_outcome: ['Each page opens without a login redirect']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.index.tsx}
+      - {file: frontend/src/routes/_app.consumer.patients.tsx}
+      - {file: frontend/src/routes/_app.consumer.addresses.tsx}
+    timeout_ms: 40000
+    steps:
+      - {action: goto, path: '/consumer', expected: '/consumer responds'}
+      - {action: expect_url, contains: '/consumer', expected: 'URL still contains /consumer (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'care stands today'}, expected: '''care stands today'' is shown'}
+      - {action: goto, path: '/consumer/patients', expected: '/consumer/patients responds'}
+      - {action: expect_url, contains: '/consumer/patients', expected: 'URL still contains /consumer/patients (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'My patients'}, expected: '''My patients'' is shown'}
+      - {action: goto, path: '/consumer/addresses', expected: '/consumer/addresses responds'}
+      - {action: expect_url, contains: '/consumer/addresses', expected: 'URL still contains /consumer/addresses (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Saved addresses'}, expected: '''Saved addresses'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_cons_02_payments_notifications_profile
+    app: nurseconnect
+    title: 'Consumer: payment history, notifications and profile/security open'
+    description: 'Logged in as consumer. Payment history is read-only; the agent never clicks pay, checkout or refund.'
+    status: draft
+    risk: low
+    writes: false
+    role: consumer
+    tags: [e2e, consumer, payments]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account']
+    expected_outcome: ['Pages open', 'No payment action is triggered']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.payments.tsx}
+      - {file: frontend/src/routes/_app.consumer.notifications.tsx}
+      - {file: frontend/src/routes/_app.consumer.profile_.tsx}
+    timeout_ms: 40000
+    steps:
+      - {action: goto, path: '/consumer/payments', expected: '/consumer/payments responds'}
+      - {action: expect_url, contains: '/consumer/payments', expected: 'URL still contains /consumer/payments (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Recent charges'}, expected: '''Recent charges'' is shown'}
+      - {action: goto, path: '/consumer/notifications', expected: '/consumer/notifications responds'}
+      - {action: expect_url, contains: '/consumer/notifications', expected: 'URL still contains /consumer/notifications (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Notifications'}, expected: 'Heading ''Notifications'' is shown'}
+      - {action: goto, path: '/consumer/profile', expected: '/consumer/profile responds'}
+      - {action: expect_url, contains: '/consumer/profile', expected: 'URL still contains /consumer/profile (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Enable 2FA'}, expected: '''Enable 2FA'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_cons_03_bookings_and_package_book_buttons
+    app: nurseconnect
+    title: 'Consumer: /consumer/bookings lists care packages with real Book buttons'
+    description: 'Logged in as consumer. Replaces the old consumer_booking_flow_readonly check: ''Book'' on this page is a BUTTON whose accessible name is exactly ''Book'', so it is matched with exact: true. A non-exact name would also match the ''New Booking'' button and the ''Bookings'' sidebar link and could never fail.'
+    status: draft
+    risk: medium
+    writes: false
+    role: consumer
+    tags: [e2e, consumer, booking, critical-candidate]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account', 'At least one active care package']
+    expected_outcome: ['Booking entry points exist', 'No booking is created']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.bookings.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/consumer/bookings', expected: '/consumer/bookings responds'}
+      - {action: expect_url, contains: '/consumer/bookings', expected: 'URL still contains /consumer/bookings (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Booking journey'}, expected: '''Booking journey'' is shown'}
+      - {action: expect_visible, target: {role: 'button', name: 'New Booking', exact: true}, expected: 'New Booking button is available'}
+      - {action: expect_count, target: {role: 'button', name: 'Book', exact: true}, min: 1, expected: 'At least one care package has a Book button', timeout_ms: 25000, severity: High}
+      - {action: expect_authenticated, expected: 'Session is still signed in'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_cons_04_new_booking_modal_opens_writes_blocked
+    app: nurseconnect
+    title: 'Consumer: New Booking modal opens (every non-GET request blocked)'
+    description: 'Logged in as consumer. Clicks New Booking with all writes blocked at the network layer and checks the modal title. Stops there: no field is filled and nothing is submitted.'
+    status: draft
+    risk: medium
+    writes: false
+    role: consumer
+    tags: [e2e, consumer, booking]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account']
+    expected_outcome: ['Modal opens', 'No booking is created']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.bookings.tsx}
+      - {file: frontend/src/routes/../components/booking/NewBookingModal.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/consumer/bookings', expected: '/consumer/bookings responds'}
+      - {action: expect_visible, target: {text: 'Booking journey'}, expected: '''Booking journey'' is shown'}
+      - {action: guarded_submit, target: {role: 'button', name: 'New Booking', exact: true}, expected: 'Click New Booking with every write blocked'}
+      - {action: expect_visible, target: {text: 'New care booking'}, expected: 'Booking modal is open', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'No write reached the server'}
+      - {action: expect_authenticated, expected: 'Session is still signed in'}
+
+  - id: nc_cons_05_book_from_package_prefills_modal
+    app: nurseconnect
+    title: 'Consumer: Book on a package card opens the pre-filled booking modal (writes blocked)'
+    description: 'Logged in as consumer. Clicks the first package Book button with all writes blocked; the same booking modal must open.'
+    status: draft
+    risk: medium
+    writes: false
+    role: consumer
+    tags: [e2e, consumer, booking]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account', 'At least one active care package']
+    expected_outcome: ['Modal opens', 'No booking is created']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.bookings.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/consumer/bookings', expected: '/consumer/bookings responds'}
+      - {action: guarded_submit, target: {role: 'button', name: 'Book', exact: true}, expected: 'Click Book on the first package with every write blocked', timeout_ms: 25000}
+      - {action: expect_visible, target: {text: 'New care booking'}, expected: 'Booking modal opens for that package', timeout_ms: 20000}
+      - {action: expect_no_writes_sent, expected: 'No write reached the server'}
+      - {action: expect_authenticated, expected: 'Session is still signed in'}
+
+  - id: nc_cons_06_unknown_booking_id_is_handled
+    app: nurseconnect
+    title: 'Consumer: opening an unknown booking id shows ''Booking not found'''
+    description: 'Logged in as consumer. A made-up booking id must produce the in-app not-found card, not a blank page or someone else''s booking.'
+    status: draft
+    risk: low
+    writes: false
+    role: consumer
+    tags: [e2e, consumer, security]
+    preconditions: ['CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account']
+    expected_outcome: ['Not-found card is shown']
+    sources:
+      - {file: frontend/src/routes/_app.consumer.bookings.$bookingId.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/consumer/bookings/qa-no-such-booking-id', expected: '/consumer/bookings/qa-no-such-booking-id responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Booking not found'}, expected: 'Heading ''Booking not found'' is shown', timeout_ms: 25000}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+
+  # ====================================================================================================
+  # 4. PARTNER / NURSE: ASSIGNMENTS, VISITS, DOCUMENTATION, EARNINGS, TRAINING, SOS CONTEXT
+  # ====================================================================================================
+
+  - id: nc_part_01_work_pages
+    app: nurseconnect
+    title: 'Partner: workspace, assignments, availability, visits, documentation, care packages'
+    description: 'Logged in as nurse. The test nurse must be approved; an unapproved nurse sees the onboarding gate instead of these pages.'
+    status: draft
+    risk: low
+    writes: false
+    role: nurse
+    tags: [e2e, partner, nurse]
+    preconditions: ['NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse']
+    expected_outcome: ['Every work page opens with its own content']
+    sources:
+      - {file: frontend/src/routes/_app.partner.index.tsx}
+      - {file: frontend/src/routes/_app.partner.assignments.tsx}
+      - {file: frontend/src/routes/_app.partner.availability.tsx}
+      - {file: frontend/src/routes/_app.partner.visits.index.tsx}
+      - {file: frontend/src/routes/_app.partner.documentation.tsx}
+      - {file: frontend/src/routes/_app.partner.services.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/partner', expected: '/partner responds'}
+      - {action: expect_url, contains: '/partner', expected: 'URL still contains /partner (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'workspace overview for today'}, expected: '''workspace overview for today'' is shown'}
+      - {action: goto, path: '/partner/assignments', expected: '/partner/assignments responds'}
+      - {action: expect_url, contains: '/partner/assignments', expected: 'URL still contains /partner/assignments (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'New Requests'}, expected: '''New Requests'' is shown'}
+      - {action: goto, path: '/partner/availability', expected: '/partner/availability responds'}
+      - {action: expect_url, contains: '/partner/availability', expected: 'URL still contains /partner/availability (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Right now'}, expected: '''Right now'' is shown'}
+      - {action: goto, path: '/partner/visits', expected: '/partner/visits responds'}
+      - {action: expect_url, contains: '/partner/visits', expected: 'URL still contains /partner/visits (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'My Visits'}, expected: '''My Visits'' is shown'}
+      - {action: goto, path: '/partner/documentation', expected: '/partner/documentation responds'}
+      - {action: expect_url, contains: '/partner/documentation', expected: 'URL still contains /partner/documentation (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'My Documents'}, expected: '''My Documents'' is shown'}
+      - {action: goto, path: '/partner/services', expected: '/partner/services responds'}
+      - {action: expect_url, contains: '/partner/services', expected: 'URL still contains /partner/services (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Care Packages I Can Provide'}, expected: '''Care Packages I Can Provide'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_part_02_earnings_training_help_profile
+    app: nurseconnect
+    title: 'Partner: earnings, training, assessments, teleconsult, help, notifications and profile'
+    description: 'Logged in as nurse. Teleconsult shows either the queue or the ''Tele-Doctor feature'' notice depending on provider type, so only URL, session and shell are asserted there.'
+    status: draft
+    risk: low
+    writes: false
+    role: nurse
+    tags: [e2e, partner, nurse]
+    preconditions: ['NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse']
+    expected_outcome: ['Every page opens without a login redirect']
+    sources:
+      - {file: frontend/src/routes/_app.partner.earnings.tsx}
+      - {file: frontend/src/routes/_app.partner.training.tsx}
+      - {file: frontend/src/routes/_app.partner.assessments.tsx}
+      - {file: frontend/src/routes/_app.partner.teleconsult.tsx}
+      - {file: frontend/src/routes/_app.partner.help.tsx}
+      - {file: frontend/src/routes/_app.partner.notifications.tsx}
+      - {file: frontend/src/routes/_app.partner.profile.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/partner/earnings', expected: '/partner/earnings responds'}
+      - {action: expect_url, contains: '/partner/earnings', expected: 'URL still contains /partner/earnings (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Payout History'}, expected: '''Payout History'' is shown'}
+      - {action: goto, path: '/partner/training', expected: '/partner/training responds'}
+      - {action: expect_url, contains: '/partner/training', expected: 'URL still contains /partner/training (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Training & Certifications'}, expected: 'Heading ''Training & Certifications'' is shown'}
+      - {action: goto, path: '/partner/assessments', expected: '/partner/assessments responds'}
+      - {action: expect_url, contains: '/partner/assessments', expected: 'URL still contains /partner/assessments (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Assessments'}, expected: 'Heading ''Assessments'' is shown'}
+      - {action: goto, path: '/partner/teleconsult', expected: '/partner/teleconsult responds'}
+      - {action: expect_url, contains: '/partner/teleconsult', expected: 'URL still contains /partner/teleconsult (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: goto, path: '/partner/help', expected: '/partner/help responds'}
+      - {action: expect_url, contains: '/partner/help', expected: 'URL still contains /partner/help (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Help & Support'}, expected: 'Heading ''Help & Support'' is shown'}
+      - {action: goto, path: '/partner/notifications', expected: '/partner/notifications responds'}
+      - {action: expect_url, contains: '/partner/notifications', expected: 'URL still contains /partner/notifications (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Notifications'}, expected: 'Heading ''Notifications'' is shown'}
+      - {action: goto, path: '/partner/profile', expected: '/partner/profile responds'}
+      - {action: expect_url, contains: '/partner/profile', expected: 'URL still contains /partner/profile (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'My Profile'}, expected: 'Heading ''My Profile'' is shown'}
+      - {action: expect_authenticated, expected: 'Session is still signed in'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_part_03_profile_shows_sos_emergency_contacts
+    app: nurseconnect
+    title: 'Partner: profile page shows the SOS emergency-contacts card (no SOS is sent)'
+    description: 'Logged in as nurse. The SOS safety feature lives on active visits (POST /api/bookings/<id>/sos) and the nurse SOS API. Those alert the real safety team, so this workflow only checks the emergency-contacts card on the profile. It never clicks any SOS control.'
+    status: draft
+    risk: low
+    writes: false
+    role: nurse
+    tags: [e2e, partner, sos]
+    preconditions: ['NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse']
+    expected_outcome: ['Emergency-contacts card is shown', 'No SOS or contact write is sent']
+    sources:
+      - {file: frontend/src/routes/_app.partner.profile.tsx}
+      - {file: frontend/src/routes/../components/partner/EmergencyContactsCard.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/partner/profile', expected: '/partner/profile responds'}
+      - {action: expect_visible, target: {role: 'heading', name: 'My Profile'}, expected: 'Heading ''My Profile'' is shown'}
+      - {action: expect_visible, target: {test_id: 'emergency-contacts-card'}, expected: 'Emergency contacts card is present', timeout_ms: 25000}
+      - {action: expect_visible, target: {text: 'If you press SOS'}, expected: 'Card explains what SOS does'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_part_04_open_first_visit_if_any
+    app: nurseconnect
+    title: 'Partner: first visit in the list opens (data-dependent; NOT VERIFIED when the test nurse has no visits)'
+    description: 'Logged in as nurse. Visit extensions and the end-visit OTP render on /partner/visits/<id> only for a live visit and only when FEATURE_VISIT_EXTENSIONS is on, so they are not asserted here. Every data-dependent step is optional: with no visits the result is NOT VERIFIED, never a false PASS.'
+    status: draft
+    risk: low
+    writes: false
+    role: nurse
+    tags: [e2e, partner, data-dependent]
+    preconditions: ['NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse', 'Nurse has at least one visit for a full PASS']
+    expected_outcome: ['Visit detail opens when a visit exists']
+    sources:
+      - {file: frontend/src/routes/_app.partner.visits.index.tsx}
+      - {file: frontend/src/routes/_app.partner.visits.$visitId.tsx}
+    timeout_ms: 30000
+    steps:
+      - {action: goto, path: '/partner/visits', expected: '/partner/visits responds'}
+      - {action: expect_visible, target: {text: 'My Visits'}, expected: '''My Visits'' is shown'}
+      - {action: click, target: {css: 'a[href*=''/partner/visits/'']'}, expected: 'Open the first visit if one exists', timeout_ms: 8000, optional: true}
+      - {action: expect_url, matches: '/partner/visits/[^/?#]+', expected: 'Visit detail URL', timeout_ms: 10000, optional: true}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Visit detail renders inside the app shell', optional: true}
+      - {action: expect_authenticated, expected: 'Session is still signed in'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+
+  # ====================================================================================================
+  # 5. ADMIN / OPERATIONS / REVIEWER: DASHBOARDS, APPROVAL QUEUES, PAYOUTS (view only; nothing is approved or released)
+  # ====================================================================================================
+
+  - id: nc_admin_01_overview_and_users
+    app: nurseconnect
+    title: 'Admin: dashboard, live ops, locations, system index, patients and nurses'
+    description: 'Logged in as admin. Read-only page loads.'
+    status: draft
+    risk: low
+    writes: false
+    role: admin
+    tags: [e2e, admin, ops]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['Every admin overview page opens']
+    sources:
+      - {file: frontend/src/routes/_app.dashboard.tsx}
+      - {file: frontend/src/routes/_app.ops-dashboard.tsx}
+      - {file: frontend/src/routes/_app.location-dashboard.tsx}
+      - {file: frontend/src/routes/_app.system-index.tsx}
+      - {file: frontend/src/routes/_app.users.patients.tsx}
+      - {file: frontend/src/routes/_app.users.nurses.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/dashboard', expected: '/dashboard responds'}
+      - {action: expect_url, contains: '/dashboard', expected: 'URL still contains /dashboard (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Booking Trends (7 days)'}, expected: 'Heading ''Booking Trends (7 days)'' is shown'}
+      - {action: goto, path: '/ops-dashboard', expected: '/ops-dashboard responds'}
+      - {action: expect_url, contains: '/ops-dashboard', expected: 'URL still contains /ops-dashboard (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Operations command center'}, expected: '''Operations command center'' is shown'}
+      - {action: goto, path: '/location-dashboard', expected: '/location-dashboard responds'}
+      - {action: expect_url, contains: '/location-dashboard', expected: 'URL still contains /location-dashboard (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Location Dashboard'}, expected: 'Heading ''Location Dashboard'' is shown'}
+      - {action: goto, path: '/system-index', expected: '/system-index responds'}
+      - {action: expect_url, contains: '/system-index', expected: 'URL still contains /system-index (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Platform Overview'}, expected: 'Heading ''Platform Overview'' is shown'}
+      - {action: goto, path: '/users/patients', expected: '/users/patients responds'}
+      - {action: expect_url, contains: '/users/patients', expected: 'URL still contains /users/patients (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: goto, path: '/users/nurses', expected: '/users/nurses responds'}
+      - {action: expect_url, contains: '/users/nurses', expected: 'URL still contains /users/nurses (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_admin_02_nurse_and_onboarding_approval_queues
+    app: nurseconnect
+    title: 'Admin: nurse approval, onboarding review, provider agreements, prescription review, reviewer management, background check'
+    description: 'Logged in as admin. Opens the approval queues only. Approve / reject buttons are never clicked.'
+    status: draft
+    risk: medium
+    writes: false
+    role: admin
+    tags: [e2e, admin, approvals]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['All approval queues open', 'No approval state changes']
+    sources:
+      - {file: frontend/src/routes/_app.nurse-approval.tsx}
+      - {file: frontend/src/routes/_app.onboarding-review.tsx}
+      - {file: frontend/src/routes/_app.provider-agreements.tsx}
+      - {file: frontend/src/routes/_app.prescription-review.tsx}
+      - {file: frontend/src/routes/_app.reviewer-management.tsx}
+      - {file: frontend/src/routes/_app.background-verification.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/nurse-approval', expected: '/nurse-approval responds'}
+      - {action: expect_url, contains: '/nurse-approval', expected: 'URL still contains /nurse-approval (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'My Review Queue'}, expected: 'Heading ''My Review Queue'' is shown'}
+      - {action: goto, path: '/onboarding-review', expected: '/onboarding-review responds'}
+      - {action: expect_url, contains: '/onboarding-review', expected: 'URL still contains /onboarding-review (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Applications in Pipeline'}, expected: '''Applications in Pipeline'' is shown'}
+      - {action: goto, path: '/provider-agreements', expected: '/provider-agreements responds'}
+      - {action: expect_url, contains: '/provider-agreements', expected: 'URL still contains /provider-agreements (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Provider Agreements'}, expected: 'Heading ''Provider Agreements'' is shown'}
+      - {action: goto, path: '/prescription-review', expected: '/prescription-review responds'}
+      - {action: expect_url, contains: '/prescription-review', expected: 'URL still contains /prescription-review (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: goto, path: '/reviewer-management', expected: '/reviewer-management responds'}
+      - {action: expect_url, contains: '/reviewer-management', expected: 'URL still contains /reviewer-management (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Reviewer Management'}, expected: 'Heading ''Reviewer Management'' is shown'}
+      - {action: goto, path: '/background-verification', expected: '/background-verification responds'}
+      - {action: expect_url, contains: '/background-verification', expected: 'URL still contains /background-verification (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Verification Queue'}, expected: '''Verification Queue'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_admin_03_finance_payouts
+    app: nurseconnect
+    title: 'Admin: payout approvals, payout release, reconciliation, disputes, hospital advances (view only)'
+    description: 'Logged in as admin. Real payouts go through Razorpay; this workflow only loads the pages and never approves, releases, refunds or pays.'
+    status: draft
+    risk: medium
+    writes: false
+    role: admin
+    tags: [e2e, admin, payouts]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['Finance pages open', 'No payout is approved or released']
+    sources:
+      - {file: frontend/src/routes/_app.payout-approvals.tsx}
+      - {file: frontend/src/routes/_app.payout-release.tsx}
+      - {file: frontend/src/routes/_app.financial-reconciliation.tsx}
+      - {file: frontend/src/routes/_app.disputes.tsx}
+      - {file: frontend/src/routes/_app.hospital-advances.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/payout-approvals', expected: '/payout-approvals responds'}
+      - {action: expect_url, contains: '/payout-approvals', expected: 'URL still contains /payout-approvals (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Payout Approvals'}, expected: 'Heading ''Payout Approvals'' is shown'}
+      - {action: goto, path: '/payout-release', expected: '/payout-release responds'}
+      - {action: expect_url, contains: '/payout-release', expected: 'URL still contains /payout-release (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Payout Release'}, expected: 'Heading ''Payout Release'' is shown'}
+      - {action: goto, path: '/financial-reconciliation', expected: '/financial-reconciliation responds'}
+      - {action: expect_url, contains: '/financial-reconciliation', expected: 'URL still contains /financial-reconciliation (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Revenue vs Payouts'}, expected: '''Revenue vs Payouts'' is shown'}
+      - {action: goto, path: '/disputes', expected: '/disputes responds'}
+      - {action: expect_url, contains: '/disputes', expected: 'URL still contains /disputes (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Financial Disputes'}, expected: '''Financial Disputes'' is shown'}
+      - {action: goto, path: '/hospital-advances', expected: '/hospital-advances responds'}
+      - {action: expect_url, contains: '/hospital-advances', expected: 'URL still contains /hospital-advances (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Hospital cab advances'}, expected: '''Hospital cab advances'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_admin_04_trust_clinical_compliance
+    app: nurseconnect
+    title: 'Admin: incidents, clinical escalation, complaints, insurance review, audit logs'
+    description: 'Logged in as admin. View only.'
+    status: draft
+    risk: low
+    writes: false
+    role: admin
+    tags: [e2e, admin, trust]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['Trust and compliance pages open']
+    sources:
+      - {file: frontend/src/routes/_app.incidents.tsx}
+      - {file: frontend/src/routes/_app.clinical-escalation.tsx}
+      - {file: frontend/src/routes/_app.complaints.tsx}
+      - {file: frontend/src/routes/_app.insurance-review.tsx}
+      - {file: frontend/src/routes/_app.audit-logs.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/incidents', expected: '/incidents responds'}
+      - {action: expect_url, contains: '/incidents', expected: 'URL still contains /incidents (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: goto, path: '/clinical-escalation', expected: '/clinical-escalation responds'}
+      - {action: expect_url, contains: '/clinical-escalation', expected: 'URL still contains /clinical-escalation (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Active Clinical Cases'}, expected: '''Active Clinical Cases'' is shown'}
+      - {action: goto, path: '/complaints', expected: '/complaints responds'}
+      - {action: expect_url, contains: '/complaints', expected: 'URL still contains /complaints (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Complaint Queue'}, expected: '''Complaint Queue'' is shown'}
+      - {action: goto, path: '/insurance-review', expected: '/insurance-review responds'}
+      - {action: expect_url, contains: '/insurance-review', expected: 'URL still contains /insurance-review (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Insurance Coverage Assessments'}, expected: '''Insurance Coverage Assessments'' is shown'}
+      - {action: goto, path: '/audit-logs', expected: '/audit-logs responds'}
+      - {action: expect_url, contains: '/audit-logs', expected: 'URL still contains /audit-logs (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Immutable Audit Trail'}, expected: '''Immutable Audit Trail'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_admin_05_catalogue_admin
+    app: nurseconnect
+    title: 'Admin: care packages, service catalogue, clinical rule sets, roles and permissions'
+    description: 'Logged in as admin. View only; no package, price or role is edited.'
+    status: draft
+    risk: low
+    writes: false
+    role: admin
+    tags: [e2e, admin, catalogue]
+    preconditions: ['ADMIN_EMAIL / ADMIN_PASSWORD set for a test account']
+    expected_outcome: ['Catalogue admin pages open']
+    sources:
+      - {file: frontend/src/routes/_app.care-packages.tsx}
+      - {file: frontend/src/routes/_app.services-catalogue.tsx}
+      - {file: frontend/src/routes/_app.clinical-rule-sets.tsx}
+      - {file: frontend/src/routes/_app.roles-permissions.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/care-packages', expected: '/care-packages responds'}
+      - {action: expect_url, contains: '/care-packages', expected: 'URL still contains /care-packages (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Care Packages'}, expected: 'Heading ''Care Packages'' is shown'}
+      - {action: goto, path: '/services-catalogue', expected: '/services-catalogue responds'}
+      - {action: expect_url, contains: '/services-catalogue', expected: 'URL still contains /services-catalogue (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Service Catalogue'}, expected: 'Heading ''Service Catalogue'' is shown'}
+      - {action: goto, path: '/clinical-rule-sets', expected: '/clinical-rule-sets responds'}
+      - {action: expect_url, contains: '/clinical-rule-sets', expected: 'URL still contains /clinical-rule-sets (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Rule Sets'}, expected: '''Rule Sets'' is shown'}
+      - {action: goto, path: '/roles-permissions', expected: '/roles-permissions responds'}
+      - {action: expect_url, contains: '/roles-permissions', expected: 'URL still contains /roles-permissions (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Roles & Permissions'}, expected: 'Heading ''Roles & Permissions'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_ops_01_staff_accounts_and_faq
+    app: nurseconnect
+    title: 'Operations: overview, staff accounts and FAQ management open (nothing is created)'
+    description: 'Logged in as operations. The Create Staff Account form is only checked for presence; it is never submitted.'
+    status: draft
+    risk: low
+    writes: false
+    role: operations
+    tags: [e2e, ops]
+    preconditions: ['OPS_EMAIL / OPS_PASSWORD set for a test account']
+    expected_outcome: ['Operations pages open', 'No staff account or FAQ is created']
+    sources:
+      - {file: frontend/src/routes/_app.operations.index.tsx}
+      - {file: frontend/src/routes/_app.operations.staff.tsx}
+      - {file: frontend/src/routes/_app.operations.faq.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/operations', expected: '/operations responds'}
+      - {action: expect_url, contains: '/operations', expected: 'URL still contains /operations (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Manage staff accounts and help-center content'}, expected: '''Manage staff accounts and help-center content'' is shown'}
+      - {action: goto, path: '/operations/staff', expected: '/operations/staff responds'}
+      - {action: expect_url, contains: '/operations/staff', expected: 'URL still contains /operations/staff (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'Staff Accounts'}, expected: 'Heading ''Staff Accounts'' is shown'}
+      - {action: expect_visible, target: {text: 'Create Staff Account'}, expected: 'Create form is present (not submitted)'}
+      - {action: goto, path: '/operations/faq', expected: '/operations/faq responds'}
+      - {action: expect_url, contains: '/operations/faq', expected: 'URL still contains /operations/faq (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'FAQ Management'}, expected: 'Heading ''FAQ Management'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+  - id: nc_rev_01_review_queues
+    app: nurseconnect
+    title: 'Reviewer: nurse approval, onboarding review, prescription review, training review open'
+    description: 'Logged in as reviewer. View only.'
+    status: draft
+    risk: low
+    writes: false
+    role: reviewer
+    tags: [e2e, reviewer]
+    preconditions: ['REVIEWER_EMAIL / REVIEWER_PASSWORD set for a test account']
+    expected_outcome: ['Reviewer queues open']
+    sources:
+      - {file: frontend/src/routes/_app.nurse-approval.tsx}
+      - {file: frontend/src/routes/_app.onboarding-review.tsx}
+      - {file: frontend/src/routes/_app.prescription-review.tsx}
+      - {file: frontend/src/routes/_app.moderation.training.tsx}
+    timeout_ms: 45000
+    steps:
+      - {action: goto, path: '/nurse-approval', expected: '/nurse-approval responds'}
+      - {action: expect_url, contains: '/nurse-approval', expected: 'URL still contains /nurse-approval (no redirect to login)'}
+      - {action: expect_visible, target: {role: 'heading', name: 'My Review Queue'}, expected: 'Heading ''My Review Queue'' is shown'}
+      - {action: goto, path: '/onboarding-review', expected: '/onboarding-review responds'}
+      - {action: expect_url, contains: '/onboarding-review', expected: 'URL still contains /onboarding-review (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Applications in Pipeline'}, expected: '''Applications in Pipeline'' is shown'}
+      - {action: goto, path: '/prescription-review', expected: '/prescription-review responds'}
+      - {action: expect_url, contains: '/prescription-review', expected: 'URL still contains /prescription-review (no redirect to login)'}
+      - {action: expect_visible, target: {css: 'main'}, expected: 'Page shell renders'}
+      - {action: goto, path: '/moderation/training', expected: '/moderation/training responds'}
+      - {action: expect_url, contains: '/moderation/training', expected: 'URL still contains /moderation/training (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Competency review queue'}, expected: '''Competency review queue'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
+
+
+  # ====================================================================================================
+  # 6. SUPPORT ROLE: SOS CONSOLE AND SUPPORT DESK. Needs the `support` role added to config.AGENT_ROLES (see answer) and SUPPORT_EMAIL / SUPPORT_PASSWORD
+  # ====================================================================================================
+
+  - id: nc_support_01_sos_console_and_support_desk
+    app: nurseconnect
+    title: 'Support: nurse SOS incidents, support chats, ticket queue, escalations, SOS partners open'
+    description: 'Logged in as support. These routes belong to the support portal only (admin sees Unauthorized). View only: no incident is acknowledged, assigned, escalated or resolved.'
+    status: draft
+    risk: medium
+    writes: false
+    role: support
+    tags: [e2e, support, sos]
+    preconditions: ['SUPPORT_EMAIL / SUPPORT_PASSWORD set; role ''support'' added to config.AGENT_ROLES']
+    expected_outcome: ['SOS console and support desk open', 'No incident state changes']
+    sources:
+      - {file: frontend/src/routes/_app.sos-incidents.tsx}
+      - {file: frontend/src/routes/_app.support-desk.tsx}
+      - {file: frontend/src/routes/_app.support-tickets.tsx}
+      - {file: frontend/src/routes/_app.support-escalations.tsx}
+      - {file: frontend/src/routes/_app.emergency-partners.tsx}
+    timeout_ms: 60000
+    steps:
+      - {action: goto, path: '/sos-incidents', expected: '/sos-incidents responds'}
+      - {action: expect_url, contains: '/sos-incidents', expected: 'URL still contains /sos-incidents (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Nurse SOS Incidents'}, expected: '''Nurse SOS Incidents'' is shown'}
+      - {action: goto, path: '/support-desk', expected: '/support-desk responds'}
+      - {action: expect_url, contains: '/support-desk', expected: 'URL still contains /support-desk (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Support Chats'}, expected: '''Support Chats'' is shown'}
+      - {action: goto, path: '/support-tickets', expected: '/support-tickets responds'}
+      - {action: expect_url, contains: '/support-tickets', expected: 'URL still contains /support-tickets (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'Support Ticket Queue'}, expected: '''Support Ticket Queue'' is shown'}
+      - {action: goto, path: '/support-escalations', expected: '/support-escalations responds'}
+      - {action: expect_url, contains: '/support-escalations', expected: 'URL still contains /support-escalations (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'All Escalations'}, expected: '''All Escalations'' is shown'}
+      - {action: goto, path: '/emergency-partners', expected: '/emergency-partners responds'}
+      - {action: expect_url, contains: '/emergency-partners', expected: 'URL still contains /emergency-partners (no redirect to login)'}
+      - {action: expect_visible, target: {text: 'SOS Partners & MOU'}, expected: '''SOS Partners & MOU'' is shown'}
+      - {action: expect_no_writes_sent, expected: 'Nothing was written'}
