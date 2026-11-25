@@ -1,0 +1,882 @@
+version: 1
+workflows:
+- id: e2e_02_customer_sees_booking_after_reload
+  app: nurseconnect
+  title: 'Customer: the booking is still there after a full reload'
+  description: 'Persistence check: the booking created in the previous workflow survives
+    a reload and a fresh navigation.'
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - chain
+  preconditions:
+  - Workflow e2e_01 ran in the same run
+  expected_outcome:
+  - Booking persists server-side
+  steps:
+  - action: open_section
+    pattern: booking|appointment|my care|orders
+    expected: 'Bookings list opens  # VERIFY menu name'
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload the page
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Booking still listed after reload
+  - action: screenshot
+    name: e2e_02_after_reload
+    expected: Evidence screenshot (masked)
+- id: e2e_03_operations_sees_new_booking
+  app: nurseconnect
+  title: 'Operations: the customer''s new booking appears in the operations queue'
+  description: Customer -> Operations hand-off. Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: operations
+  tags:
+  - chain
+  preconditions:
+  - e2e_01 ran in the same run
+  - OPS_EMAIL / OPS_PASSWORD set
+  expected_outcome:
+  - Booking is visible to operations
+  steps:
+  - action: open_section
+    pattern: booking|request|order|queue|dashboard
+    expected: 'Operations queue opens  # VERIFY menu name'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: New booking visible to operations
+  - action: screenshot
+    name: e2e_03_ops_queue
+    expected: Evidence screenshot (masked)
+- id: e2e_05_nurse_sees_assignment
+  app: nurseconnect
+  title: 'Nurse: the assignment appears under Workspace > Assignments'
+  description: Operations -> Nurse hand-off, nurse side. Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_04 ran
+  expected_outcome:
+  - Nurse sees exactly the assigned booking
+  steps:
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments page opens
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Assignment for the synthetic patient is listed
+  - action: screenshot
+    name: e2e_05_nurse_assignments
+    expected: Evidence screenshot (masked)
+- id: e2e_09_reviewer_sees_submission
+  app: nurseconnect
+  title: 'Reviewer: the submitted documentation appears in the review queue'
+  description: Nurse -> Reviewer hand-off, reviewer side. Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: reviewer
+  tags:
+  - chain
+  preconditions:
+  - e2e_08 ran
+  - REVIEWER_EMAIL / REVIEWER_PASSWORD set
+  expected_outcome:
+  - Reviewer sees the correct submission
+  steps:
+  - action: open_section
+    pattern: review|queue|pending|documentation
+    expected: 'Review queue opens  # VERIFY menu name'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Submission visible to the reviewer
+  - action: expect_text
+    contains: '{{MARKER}}'
+    expected: Note content visible to the reviewer
+  - action: screenshot
+    name: e2e_09_review_queue
+    expected: Evidence screenshot (masked)
+- id: e2e_11_nurse_sees_review_feedback
+  app: nurseconnect
+  title: 'Nurse: the reviewer''s feedback is visible and the note is editable again'
+  description: Reviewer -> Nurse hand-off. Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_10 ran
+  expected_outcome:
+  - Nurse sees the reviewer comment
+  steps:
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic documentation
+  - action: expect_text
+    contains: please add vitals
+    expected: Reviewer comment is visible to the nurse
+  - action: screenshot
+    name: e2e_11_feedback_seen
+    expected: Evidence screenshot (masked)
+- id: e2e_14_customer_sees_completed_visit_summary
+  app: nurseconnect
+  title: 'Customer: the booking now reflects the nurse''s approved work'
+  description: Closes the loop customer -> operations -> nurse -> reviewer -> customer.
+    Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - chain
+  preconditions:
+  - e2e_13 ran
+  expected_outcome:
+  - Customer sees the final status
+  steps:
+  - action: open_section
+    pattern: booking|appointment|my care|orders
+    expected: 'Bookings list opens  # VERIFY'
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the booking
+  - action: expect_text
+    contains: Completed
+    expected: 'Booking status reflects completion  # VERIFY wording'
+  - action: screenshot
+    name: e2e_14_customer_final
+    expected: Evidence screenshot (masked)
+- id: e2e_15_admin_sees_nurse_and_activity
+  app: nurseconnect
+  title: 'Admin: nurse record and the booking activity are visible to the admin'
+  description: 'Nurse <-> Admin. Read-only. Admin write actions (approve / suspend
+    a nurse) are not included: see docs/NURSECONNECT_E2E_TEST_PLAN.md.'
+  status: draft
+  risk: low
+  writes: false
+  role: admin
+  tags:
+  - chain
+  preconditions:
+  - e2e_13 ran
+  - ADMIN_EMAIL / ADMIN_PASSWORD set
+  expected_outcome:
+  - Admin has visibility across the chain
+  steps:
+  - action: open_section
+    pattern: nurse|partner|staff|users
+    expected: 'Nurse management page opens  # VERIFY menu name'
+  - action: expect_text
+    contains: Test Nurse
+    expected: 'Dedicated test nurse is listed  # VERIFY'
+  - action: open_section
+    pattern: booking|request|order|report
+    expected: 'Bookings / reports page opens  # VERIFY'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Booking visible to the admin
+  - action: screenshot
+    name: e2e_15_admin_view
+    expected: Evidence screenshot (masked)
+- id: e2e_16_nurse_access_matches_admin_status
+  app: nurseconnect
+  title: 'Nurse: an active, approved nurse can open the workspace (admin-controlled
+    status takes effect)'
+  description: Nurse <-> Admin. Read-only. Confirms the nurse account the admin manages
+    can reach Workspace, Assignments, Visits and Documentation.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - All four nurse pages open
+  steps:
+  - action: expect_authenticated
+    expected: Nurse is logged in
+  - action: open_section
+    pattern: Workspace
+    expected: Workspace opens
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments opens
+  - action: open_section
+    pattern: Visits
+    expected: Visits opens
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation opens
+  - action: expect_url
+    contains: /partner
+    expected: Nurse stays in the partner area
+- id: edge_01_booking_empty_required_fields
+  app: nurseconnect
+  title: 'Edge: booking form refuses empty required fields (no request is sent)'
+  description: All non-GET requests are blocked at the network layer, so this never
+    writes.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Validation blocks the empty form
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: guarded_submit
+    target:
+      role: button
+      name: Request Booking
+    expected: 'Submit with nothing filled  # VERIFY'
+  - action: expect_text
+    contains: required
+    expected: 'A ''required'' validation message appears  # VERIFY wording'
+  - action: expect_no_writes_sent
+    expected: Nothing was sent to the server
+- id: edge_02_booking_malformed_phone
+  app: nurseconnect
+  title: 'Edge: malformed phone numbers are rejected'
+  description: Letters and a too-short number. Blocked from writing.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Invalid phone numbers never reach the server
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: '{{SYNTH_NAME}}'
+    expected: 'Name  # VERIFY label'
+  - action: fill
+    target:
+      label: Phone
+    value: abc123
+    expected: 'Letters in phone  # VERIFY label'
+  - action: guarded_submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Submit
+  - action: expect_text
+    matches: phone|mobile|number
+    expected: Phone validation message
+  - action: fill
+    target:
+      label: Phone
+    value: '12345'
+    expected: Too-short number
+  - action: guarded_submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Submit
+  - action: expect_text
+    matches: phone|mobile|number|10
+    expected: Phone length validation message
+  - action: expect_no_writes_sent
+    expected: Nothing was sent to the server
+- id: edge_03_booking_very_long_text
+  app: nurseconnect
+  title: 'Edge: very long text in the notes field is limited or rejected, not crashed
+    on'
+  description: About 1,400 characters made from the run marker. Blocked from writing.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Long input handled cleanly
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Notes
+    value: '{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}'
+    expected: 'Long notes  # VERIFY label'
+  - action: guarded_submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Submit
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+  - action: expect_hidden
+    target:
+      text: Something went wrong
+    expected: 'No generic crash message  # VERIFY wording'
+- id: edge_08_nurse_empty_documentation_rejected
+  app: nurseconnect
+  title: 'Edge: nurse cannot save an empty documentation note'
+  description: Blocked from writing.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - edge
+  preconditions:
+  - e2e_05 ran
+  expected_outcome:
+  - Empty notes are not stored
+  steps:
+  - action: open_section
+    pattern: Visits
+    expected: Visits page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic visit
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation tab opens
+  - action: fill
+    target:
+      label: Notes
+    value: '{{WF_ID}}'
+    expected: Type something
+  - action: press
+    target:
+      label: Notes
+    key: Control+a
+    expected: Select the text
+  - action: press
+    target:
+      label: Notes
+    key: Delete
+    expected: Delete it
+  - action: guarded_submit
+    target:
+      role: button
+      name: Save
+    expected: 'Try to save empty  # VERIFY'
+  - action: expect_text
+    matches: required|empty|cannot be blank
+    expected: Empty-note validation message
+  - action: expect_no_writes_sent
+    expected: Nothing was sent to the server
+- id: edge_09_nurse_session_survives_reload
+  app: nurseconnect
+  title: 'Edge: the nurse session survives reloads and a new navigation'
+  description: Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Session persists
+  steps:
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_authenticated
+    expected: Still logged in after reload
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments opens
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_authenticated
+    expected: Still logged in after second reload
+- id: edge_10_nurse_unknown_visit_id
+  app: nurseconnect
+  title: 'Edge: opening a visit id that does not exist shows a clean ''not found'',
+    no crash'
+  description: Read-only. The path is a guess; adjust it to the real visit URL pattern.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Graceful handling of unknown ids
+  steps:
+  - action: goto
+    path: /partner/visits/{{RUN_ID}}-does-not-exist
+    expected: 'Open a non-existent visit  # VERIFY path'
+    optional: true
+  - action: expect_text
+    matches: not found|no visit|does not exist|unavailable|404
+    expected: Clean not-found message
+    optional: true
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+- id: edge_11_consumer_unknown_route
+  app: nurseconnect
+  title: 'Edge: an unknown customer page shows a clean 404, not a blank page or stack
+    trace'
+  description: Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Graceful 404
+  steps:
+  - action: goto
+    path: /consumer/{{RUN_ID}}-nope
+    expected: Open a non-existent page
+    optional: true
+  - action: expect_text
+    matches: not found|404|doesn't exist|does not exist
+    expected: Clean 404 page
+    optional: true
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+- id: sec_04_customer_cannot_open_nurse_area
+  app: nurseconnect
+  title: 'Security: a consumer cannot open /partner (broken access control)'
+  description: Logs in as consumer then opens /partner directly by URL. The URL must
+    leave /partner or an access-denied message must show.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Access denied or redirected
+  steps:
+  - action: goto
+    path: /partner
+    expected: Open /partner as consumer
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/partner(/|$)).*$
+    expected: 'Not left on /partner  # FAIL means the area is reachable'
+  - action: expect_no_writes_sent
+    expected: Nothing was written
+- id: sec_05_nurse_cannot_open_customer_area
+  app: nurseconnect
+  title: 'Security: a nurse cannot open /consumer (broken access control)'
+  description: Logs in as nurse then opens /consumer directly by URL. The URL must
+    leave /consumer or an access-denied message must show.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Access denied or redirected
+  steps:
+  - action: goto
+    path: /consumer
+    expected: Open /consumer as nurse
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/consumer(/|$)).*$
+    expected: 'Not left on /consumer  # FAIL means the area is reachable'
+  - action: expect_no_writes_sent
+    expected: Nothing was written
+- id: sec_06_customer_cannot_open_staff_areas
+  app: nurseconnect
+  title: 'Security: a consumer cannot open operations / reviewer / admin areas'
+  description: Paths from the frontend route files. Reaching the page with real content
+    is a FAIL; unknown routes show as NOT VERIFIED.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Staff areas are not reachable
+  steps:
+  - action: goto
+    path: /operations
+    expected: consumer opens /operations
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/operations(/|$)).*$
+    expected: Not left on /operations
+    optional: true
+  - action: goto
+    path: /nurse-approval
+    expected: consumer opens /nurse-approval
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/nurse-approval(/|$)).*$
+    expected: Not left on /nurse-approval
+    optional: true
+  - action: goto
+    path: /reviewer-management
+    expected: consumer opens /reviewer-management
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/reviewer-management(/|$)).*$
+    expected: Not left on /reviewer-management
+    optional: true
+  - action: goto
+    path: /roles-permissions
+    expected: consumer opens /roles-permissions
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/roles-permissions(/|$)).*$
+    expected: Not left on /roles-permissions
+    optional: true
+- id: sec_07_nurse_cannot_open_staff_areas
+  app: nurseconnect
+  title: 'Security: a nurse cannot open operations / reviewer / admin areas'
+  description: Paths from the frontend route files. Reaching the page with real content
+    is a FAIL; unknown routes show as NOT VERIFIED.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Staff areas are not reachable
+  steps:
+  - action: goto
+    path: /operations
+    expected: nurse opens /operations
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/operations(/|$)).*$
+    expected: Not left on /operations
+    optional: true
+  - action: goto
+    path: /nurse-approval
+    expected: nurse opens /nurse-approval
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/nurse-approval(/|$)).*$
+    expected: Not left on /nurse-approval
+    optional: true
+  - action: goto
+    path: /reviewer-management
+    expected: nurse opens /reviewer-management
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/reviewer-management(/|$)).*$
+    expected: Not left on /reviewer-management
+    optional: true
+  - action: goto
+    path: /roles-permissions
+    expected: nurse opens /roles-permissions
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/roles-permissions(/|$)).*$
+    expected: Not left on /roles-permissions
+    optional: true
+- id: sec_08_reviewer_cannot_open_admin_area
+  app: nurseconnect
+  title: 'Security: reviewer cannot open the admin area'
+  description: Admin-only page assumed from the route name roles-permissions; confirm
+    with the product owner.
+  status: draft
+  risk: low
+  writes: false
+  role: reviewer
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Admin area is admin-only
+  steps:
+  - action: goto
+    path: /roles-permissions
+    expected: 'reviewer opens /roles-permissions  # VERIFY: assumed admin-only page'
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/roles-permissions(/|$)).*$
+    expected: Not left on /roles-permissions
+    optional: true
+- id: sec_09_operations_cannot_open_admin_area
+  app: nurseconnect
+  title: 'Security: operations cannot open the admin area'
+  description: Admin-only page assumed from the route name roles-permissions; confirm
+    with the product owner.
+  status: draft
+  risk: low
+  writes: false
+  role: operations
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Admin area is admin-only
+  steps:
+  - action: goto
+    path: /roles-permissions
+    expected: 'operations opens /roles-permissions  # VERIFY: assumed admin-only page'
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/roles-permissions(/|$)).*$
+    expected: Not left on /roles-permissions
+    optional: true
+- id: sec_10_login_sql_injection_strings
+  app: nurseconnect
+  title: 'Security: SQL-injection style input does not log in and does not leak errors'
+  description: Classic strings in both fields. The login form must stay, with a generic
+    message and no database error text.
+  status: draft
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - No valid credentials used
+  expected_outcome:
+  - Login refused cleanly
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path (NURSECONNECT_LOGIN_PATH)'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: QA_INJECTION_EMAIL
+    expected: Injection string in email
+  - action: fill
+    target:
+      css: input[type="password"]
+    value_env: QA_INJECTION_PASSWORD
+    expected: Injection string in password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form (not authenticated)
+  - action: expect_hidden
+    target:
+      text: syntax error
+    expected: No SQL error text
+  - action: expect_hidden
+    target:
+      text: SQLSTATE
+    expected: No SQL state text
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+  - action: expect_no_writes_sent
+    expected: Nothing was written
+- id: sec_11_login_html_script_input
+  app: nurseconnect
+  title: 'Security: HTML in the login fields is not rendered or reflected'
+  description: Submits an image tag as the email; it must not be echoed back as live
+    markup.
+  status: draft
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Input is not reflected as markup
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: <img src=x>{{RUN_ID}}
+    expected: HTML in email
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: Throw-away password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form
+  - action: expect_count
+    target:
+      css: img[src=x]
+    expected: No injected image element exists
+    equals: 0
+- id: sec_12_login_error_does_not_reveal_account_existence
+  app: nurseconnect
+  title: 'Security: the login error for an unknown account is generic'
+  description: A message such as 'user not found' lets an attacker list valid accounts.
+  status: draft
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Generic error text
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: Unknown synthetic account
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: Wrong password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: wait_for
+    ms: 1500
+    expected: Pause
+  - action: expect_hidden
+    target:
+      text: not registered
+    expected: No 'not registered'
+  - action: expect_hidden
+    target:
+      text: no account
+    expected: No 'no account'
+  - action: expect_hidden
+    target:
+      text: user not found
+    expected: No 'user not found'
+  - action: expect_hidden
+    target:
+      text: does not exist
+    expected: No 'does not exist'
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form
+- id: sec_13_nurse_login_has_no_credentials_in_url
+  app: nurseconnect
+  title: 'Security: after login the URL contains no query string (no token / session
+    id in the address bar)'
+  description: Read-only.
+  status: draft
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - No secrets in URLs
+  steps:
+  - action: expect_url
+    matches: ^[^?#]*$
+    expected: No query string or fragment in the URL after login

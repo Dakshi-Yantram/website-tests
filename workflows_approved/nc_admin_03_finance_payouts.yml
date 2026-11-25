@@ -1,0 +1,83 @@
+version: 1
+workflows:
+- id: nc_admin_03_finance_payouts
+  app: nurseconnect
+  title: 'Admin: payout approvals, payout release, reconciliation, disputes, hospital
+    advances (view only)'
+  description: Logged in as admin. Real payouts go through Razorpay; this workflow
+    only loads the pages and never approves, releases, refunds or pays.
+  status: approved
+  risk: medium
+  writes: false
+  role: admin
+  tags:
+  - e2e
+  - admin
+  - payouts
+  preconditions:
+  - ADMIN_EMAIL / ADMIN_PASSWORD set for a test account
+  expected_outcome:
+  - Finance pages open
+  - No payout is approved or released
+  sources:
+  - file: frontend/src/routes/_app.payout-approvals.tsx
+  - file: frontend/src/routes/_app.payout-release.tsx
+  - file: frontend/src/routes/_app.financial-reconciliation.tsx
+  - file: frontend/src/routes/_app.disputes.tsx
+  - file: frontend/src/routes/_app.hospital-advances.tsx
+  timeout_ms: 60000
+  steps:
+  - action: goto
+    path: /payout-approvals
+    expected: /payout-approvals responds
+  - action: expect_url
+    contains: /payout-approvals
+    expected: URL still contains /payout-approvals (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Payout Approvals
+    expected: Heading 'Payout Approvals' is shown
+  - action: goto
+    path: /payout-release
+    expected: /payout-release responds
+  - action: expect_url
+    contains: /payout-release
+    expected: URL still contains /payout-release (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Payout Release
+    expected: Heading 'Payout Release' is shown
+  - action: goto
+    path: /financial-reconciliation
+    expected: /financial-reconciliation responds
+  - action: expect_url
+    contains: /financial-reconciliation
+    expected: URL still contains /financial-reconciliation (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Revenue vs Payouts
+    expected: '''Revenue vs Payouts'' is shown'
+  - action: goto
+    path: /disputes
+    expected: /disputes responds
+  - action: expect_url
+    contains: /disputes
+    expected: URL still contains /disputes (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Financial Disputes
+    expected: '''Financial Disputes'' is shown'
+  - action: goto
+    path: /hospital-advances
+    expected: /hospital-advances responds
+  - action: expect_url
+    contains: /hospital-advances
+    expected: URL still contains /hospital-advances (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Hospital cab advances
+    expected: '''Hospital cab advances'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

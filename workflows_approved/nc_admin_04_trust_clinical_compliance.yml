@@ -1,0 +1,79 @@
+version: 1
+workflows:
+- id: nc_admin_04_trust_clinical_compliance
+  app: nurseconnect
+  title: 'Admin: incidents, clinical escalation, complaints, insurance review, audit
+    logs'
+  description: Logged in as admin. View only.
+  status: approved
+  risk: low
+  writes: false
+  role: admin
+  tags:
+  - e2e
+  - admin
+  - trust
+  preconditions:
+  - ADMIN_EMAIL / ADMIN_PASSWORD set for a test account
+  expected_outcome:
+  - Trust and compliance pages open
+  sources:
+  - file: frontend/src/routes/_app.incidents.tsx
+  - file: frontend/src/routes/_app.clinical-escalation.tsx
+  - file: frontend/src/routes/_app.complaints.tsx
+  - file: frontend/src/routes/_app.insurance-review.tsx
+  - file: frontend/src/routes/_app.audit-logs.tsx
+  timeout_ms: 60000
+  steps:
+  - action: goto
+    path: /incidents
+    expected: /incidents responds
+  - action: expect_url
+    contains: /incidents
+    expected: URL still contains /incidents (no redirect to login)
+  - action: expect_visible
+    target:
+      css: main
+    expected: Page shell renders
+  - action: goto
+    path: /clinical-escalation
+    expected: /clinical-escalation responds
+  - action: expect_url
+    contains: /clinical-escalation
+    expected: URL still contains /clinical-escalation (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Active Clinical Cases
+    expected: '''Active Clinical Cases'' is shown'
+  - action: goto
+    path: /complaints
+    expected: /complaints responds
+  - action: expect_url
+    contains: /complaints
+    expected: URL still contains /complaints (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Complaint Queue
+    expected: '''Complaint Queue'' is shown'
+  - action: goto
+    path: /insurance-review
+    expected: /insurance-review responds
+  - action: expect_url
+    contains: /insurance-review
+    expected: URL still contains /insurance-review (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Insurance Coverage Assessments
+    expected: '''Insurance Coverage Assessments'' is shown'
+  - action: goto
+    path: /audit-logs
+    expected: /audit-logs responds
+  - action: expect_url
+    contains: /audit-logs
+    expected: URL still contains /audit-logs (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Immutable Audit Trail
+    expected: '''Immutable Audit Trail'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

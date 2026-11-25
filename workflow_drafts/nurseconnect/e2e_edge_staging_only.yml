@@ -1,0 +1,967 @@
+version: 1
+workflows:
+- id: e2e_01_customer_books_care_package
+  app: nurseconnect
+  title: 'Customer: choose a care package and request a booking (stops before payment)'
+  description: Creates ONE booking request named with the synthetic run name. The
+    flow stops before any payment step; the agent never clicks pay/checkout.
+  status: draft
+  risk: medium
+  writes: true
+  role: consumer
+  tags:
+  - chain
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Server accepts the booking request
+  - Booking is listed for the customer
+  - No payment is made
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open the first package''s booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: '{{SYNTH_NAME}}'
+    expected: 'Synthetic patient name  # VERIFY label'
+  - action: fill
+    target:
+      label: Phone
+    value: '{{SYNTH_PHONE}}'
+    expected: 'Synthetic phone  # VERIFY label'
+  - action: fill
+    target:
+      label: Notes
+    value: '{{MARKER}}'
+    expected: 'Marker in notes  # VERIFY label'
+  - action: submit
+    target:
+      role: button
+      name: Request Booking
+    expected: 'Booking request saved (no payment)  # VERIFY button'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Booking shows the synthetic patient name
+  - action: screenshot
+    name: e2e_01_booking_created
+    expected: Evidence screenshot (masked)
+- id: e2e_04_operations_assigns_nurse
+  app: nurseconnect
+  title: 'Operations: open the booking and assign the test nurse'
+  description: Operations -> Nurse hand-off. Writes one assignment.
+  status: draft
+  risk: medium
+  writes: true
+  role: operations
+  tags:
+  - chain
+  preconditions:
+  - e2e_03 ran
+  - A dedicated staging test nurse exists
+  expected_outcome:
+  - Booking status becomes assigned to the test nurse
+  steps:
+  - action: open_section
+    pattern: booking|request|order|queue|dashboard
+    expected: 'Operations queue opens  # VERIFY'
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic booking
+  - action: click
+    target:
+      role: button
+      name: Assign
+    expected: 'Open the assign dialog  # VERIFY'
+  - action: click
+    target:
+      role: option
+      name: Test Nurse
+      nth: 0
+    expected: 'Pick the dedicated staging test nurse  # VERIFY option label'
+  - action: submit
+    target:
+      role: button
+      name: Confirm Assignment
+    expected: 'Assignment saved  # VERIFY'
+  - action: expect_text
+    contains: Assigned
+    expected: 'Status shows assigned  # VERIFY wording'
+  - action: screenshot
+    name: e2e_04_assigned
+    expected: Evidence screenshot (masked)
+- id: e2e_06_nurse_accepts_assignment
+  app: nurseconnect
+  title: 'Nurse: accept the assignment'
+  description: Writes one status change (accepted).
+  status: draft
+  risk: medium
+  writes: true
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_05 ran
+  expected_outcome:
+  - Status persists as accepted
+  steps:
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic assignment
+  - action: submit
+    target:
+      role: button
+      name: Accept
+    expected: 'Assignment accepted  # VERIFY'
+  - action: expect_text
+    contains: Accepted
+    expected: 'Status shows accepted  # VERIFY wording'
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_text
+    contains: Accepted
+    expected: Accepted status persists after reload
+  - action: screenshot
+    name: e2e_06_accepted
+    expected: Evidence screenshot (masked)
+- id: e2e_07_nurse_documents_visit
+  app: nurseconnect
+  title: 'Nurse: Visits > open the visit > save documentation, then reopen'
+  description: Writes one documentation note containing the run marker and verifies
+    it after reopening.
+  status: draft
+  risk: medium
+  writes: true
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_06 ran
+  expected_outcome:
+  - Note is stored on the correct visit and shows after reload
+  steps:
+  - action: open_section
+    pattern: Visits
+    expected: Visits page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic visit
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation tab opens
+  - action: fill
+    target:
+      label: Notes
+    value: '{{MARKER}} synthetic visit note'
+    expected: 'Synthetic note  # VERIFY label'
+  - action: submit
+    target:
+      role: button
+      name: Save
+    expected: 'Note saved  # VERIFY'
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_text
+    contains: '{{MARKER}}'
+    expected: Saved note is present after reload (persistence, not just a toast)
+  - action: screenshot
+    name: e2e_07_documented
+    expected: Evidence screenshot (masked)
+- id: e2e_08_nurse_submits_documentation_for_review
+  app: nurseconnect
+  title: 'Nurse: submit the documentation to the reviewer'
+  description: Nurse -> Reviewer hand-off. Writes one status change.
+  status: draft
+  risk: medium
+  writes: true
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_07 ran
+  expected_outcome:
+  - Documentation is locked / pending review
+  steps:
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic documentation
+  - action: submit
+    target:
+      role: button
+      name: Submit for Review
+    expected: 'Submitted  # VERIFY'
+  - action: expect_text
+    contains: Pending
+    expected: 'Status shows pending review  # VERIFY wording'
+  - action: screenshot
+    name: e2e_08_submitted
+    expected: Evidence screenshot (masked)
+- id: e2e_10_reviewer_requests_changes
+  app: nurseconnect
+  title: 'Reviewer: request changes with a comment'
+  description: Reviewer -> Nurse feedback loop. Writes one review decision.
+  status: draft
+  risk: medium
+  writes: true
+  role: reviewer
+  tags:
+  - chain
+  preconditions:
+  - e2e_09 ran
+  expected_outcome:
+  - Decision stored with the comment
+  steps:
+  - action: open_section
+    pattern: review|queue|pending|documentation
+    expected: 'Review queue opens  # VERIFY'
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the submission
+  - action: fill
+    target:
+      label: Comment
+    value: '{{MARKER}} please add vitals'
+    expected: 'Review comment  # VERIFY label'
+  - action: submit
+    target:
+      role: button
+      name: Request Changes
+    expected: 'Decision saved  # VERIFY'
+  - action: expect_text
+    contains: Changes requested
+    expected: 'Status shows changes requested  # VERIFY wording'
+  - action: screenshot
+    name: e2e_10_changes_requested
+    expected: Evidence screenshot (masked)
+- id: e2e_12_nurse_resubmits_and_reviewer_approves
+  app: nurseconnect
+  title: 'Nurse: add vitals and resubmit'
+  description: Writes an update and a status change.
+  status: draft
+  risk: medium
+  writes: true
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - e2e_11 ran
+  expected_outcome:
+  - Resubmission accepted
+  steps:
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation page opens
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the synthetic documentation
+  - action: fill
+    target:
+      label: Notes
+    value: '{{MARKER}} vitals recorded'
+    expected: 'Updated synthetic note  # VERIFY label'
+  - action: submit
+    target:
+      role: button
+      name: Submit for Review
+    expected: 'Resubmitted  # VERIFY'
+  - action: expect_text
+    contains: Pending
+    expected: 'Status shows pending review again  # VERIFY wording'
+- id: e2e_13_reviewer_approves_documentation
+  app: nurseconnect
+  title: 'Reviewer: approve the resubmitted documentation'
+  description: Writes one approval decision.
+  status: draft
+  risk: medium
+  writes: true
+  role: reviewer
+  tags:
+  - chain
+  preconditions:
+  - e2e_12 ran
+  expected_outcome:
+  - Documentation approved and persisted
+  steps:
+  - action: open_section
+    pattern: review|queue|pending|documentation
+    expected: 'Review queue opens  # VERIFY'
+  - action: click
+    target:
+      text: '{{SYNTH_NAME}}'
+    expected: Open the submission
+  - action: submit
+    target:
+      role: button
+      name: Approve
+    expected: 'Approved  # VERIFY'
+  - action: expect_text
+    contains: Approved
+    expected: 'Status shows approved  # VERIFY wording'
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_text
+    contains: Approved
+    expected: Approval persists after reload
+  - action: screenshot
+    name: e2e_13_approved
+    expected: Evidence screenshot (masked)
+- id: edge_04_booking_html_is_escaped
+  app: nurseconnect
+  title: 'Edge/Security: HTML typed into the notes field is shown as text, not rendered'
+  description: Stored-XSS check. Writes one booking whose notes contain a bold tag;
+    the tag must appear literally.
+  status: draft
+  risk: medium
+  writes: true
+  role: consumer
+  tags:
+  - edge
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Notes are HTML-escaped on display
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: '{{SYNTH_NAME}} {{WF_ID}}'
+    expected: Name
+  - action: fill
+    target:
+      label: Phone
+    value: '{{SYNTH_PHONE}}'
+    expected: Phone
+  - action: fill
+    target:
+      label: Notes
+    value: <b>{{MARKER}}</b>
+    expected: HTML in notes
+  - action: submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Save
+  - action: expect_text
+    contains: <b>
+    expected: The tag is visible as literal text (output is escaped)
+  - action: screenshot
+    name: edge_04_escaped
+    expected: Evidence screenshot (masked)
+- id: edge_05_booking_double_click_creates_one
+  app: nurseconnect
+  title: 'Edge: a double click on the submit button creates only one booking'
+  description: Two rapid submits. Exactly one row for this workflow must exist afterwards.
+  status: draft
+  risk: medium
+  writes: true
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - No duplicate booking
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: '{{SYNTH_NAME}} {{WF_ID}}'
+    expected: Name
+  - action: fill
+    target:
+      label: Phone
+    value: '{{SYNTH_PHONE}}'
+    expected: Phone
+  - action: submit
+    target:
+      role: button
+      name: Request Booking
+    expected: 'First click  # VERIFY'
+  - action: click
+    target:
+      role: button
+      name: Request Booking
+    expected: Immediate second click (if the button is still there)
+    optional: true
+  - action: open_section
+    pattern: booking|appointment|my care|orders
+    expected: Bookings list
+  - action: expect_count
+    target:
+      text: '{{WF_ID}}'
+    expected: Exactly one booking for this workflow
+    equals: 1
+- id: edge_06_booking_reload_does_not_resubmit
+  app: nurseconnect
+  title: 'Edge: reloading after a booking does not create a second one'
+  description: Reload twice after submit; the count must stay at one.
+  status: draft
+  risk: medium
+  writes: true
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Reload is idempotent
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: '{{SYNTH_NAME}} {{WF_ID}}'
+    expected: Name
+  - action: fill
+    target:
+      label: Phone
+    value: '{{SYNTH_PHONE}}'
+    expected: Phone
+  - action: submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Save
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload again
+  - action: open_section
+    pattern: booking|appointment|my care|orders
+    expected: Bookings list
+  - action: expect_count
+    target:
+      text: '{{WF_ID}}'
+    expected: Exactly one booking
+    equals: 1
+- id: edge_07_booking_unicode_and_apostrophe_name
+  app: nurseconnect
+  title: 'Edge: names with an apostrophe, accents and a hyphen are accepted and shown
+    unchanged'
+  description: Writes one booking. Catches encoding and quoting bugs.
+  status: draft
+  risk: medium
+  writes: true
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Special characters survive the round trip
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Patient Name
+    value: O'Brien-Núñez {{WF_ID}}
+    expected: Name with apostrophe and accents
+  - action: fill
+    target:
+      label: Phone
+    value: '{{SYNTH_PHONE}}'
+    expected: Phone
+  - action: submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Save
+  - action: expect_text
+    contains: O'Brien-Núñez
+    expected: Name shown unchanged
+- id: sec_14_brute_force_unknown_account_is_rate_limited
+  app: nurseconnect
+  title: 'Security: 10 rapid wrong logins from one browser are throttled (brute-force
+    protection)'
+  description: STAGING ONLY. Ten failed attempts with a synthetic non-existent account.
+    Expect a rate-limit or lockout message by the tenth. FAIL means an attacker can
+    guess passwords without being slowed down.
+  status: draft
+  risk: medium
+  writes: false
+  staging_only: true
+  timeout_ms: 60000
+  tags:
+  - security
+  - brute-force
+  preconditions:
+  - Declared staging environment (never production)
+  - Synthetic account only
+  expected_outcome:
+  - Throttling or lockout after repeated failures
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 1: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 1: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 1
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 2: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 2: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 2
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 3: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 3: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 3
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 4: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 4: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 4
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 5: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 5: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 5
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 6: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 6: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 6
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 7: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 7: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 7
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 8: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 8: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 8
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 9: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 9: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 9
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: 'Attempt 10: unknown account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 10: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 10
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: expect_text
+    matches: too many|rate|try again|locked|slow down|wait|temporarily
+    expected: A rate-limit / lockout message appears within 10 attempts
+  - action: screenshot
+    name: sec_14_after_10_attempts
+    expected: Evidence screenshot (masked)
+- id: sec_15_brute_force_real_account_is_locked_out
+  app: nurseconnect
+  title: 'Security: 8 wrong passwords lock a real account, even for the correct password
+    afterwards'
+  description: STAGING ONLY, DEDICATED ACCOUNT ONLY. Uses env vars LOCKOUT_EMAIL /
+    LOCKOUT_PASSWORD (a throw-away staging account that nobody else uses; it will
+    be locked by this test and may need an unlock before the next run). If the correct
+    password still logs in, there is no per-account lockout.
+  status: draft
+  risk: medium
+  writes: false
+  staging_only: true
+  timeout_ms: 60000
+  tags:
+  - security
+  - brute-force
+  preconditions:
+  - Declared staging environment (never production)
+  - LOCKOUT_EMAIL / LOCKOUT_PASSWORD point at a dedicated throw-away staging account
+  expected_outcome:
+  - Account lockout or throttling holds against password guessing
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 1: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 1: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 1
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 2: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 2: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 2
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 3: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 3: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 3
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 4: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 4: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 4
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 5: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 5: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 5
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 6: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 6: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 6
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 7: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 7: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 7
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: 'Attempt 8: dedicated staging account'
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: 'Attempt 8: wrong password'
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Attempt 8
+  - action: wait_for
+    ms: 300
+    expected: Pause
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value_env: LOCKOUT_EMAIL
+    expected: Now the correct identity
+  - action: fill
+    target:
+      css: input[type="password"]
+    value_env: LOCKOUT_PASSWORD
+    expected: Correct password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Correct credentials after repeated failures
+  - action: wait_for
+    ms: 1500
+    expected: Pause
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: 'STILL on the login form: the account is locked / throttled even with
+      the correct password'
+  - action: expect_text
+    matches: locked|too many|try again|temporarily|reset
+    expected: Lockout message shown
+  - action: screenshot
+    name: sec_15_locked_out
+    expected: Evidence screenshot (masked)

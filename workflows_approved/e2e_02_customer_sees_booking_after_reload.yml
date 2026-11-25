@@ -1,0 +1,32 @@
+version: 1
+workflows:
+- id: e2e_02_customer_sees_booking_after_reload
+  app: nurseconnect
+  title: 'Customer: the booking is still there after a full reload'
+  description: 'Persistence check: the booking created in the previous workflow survives
+    a reload and a fresh navigation.'
+  status: approved
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - chain
+  preconditions:
+  - Workflow e2e_01 ran in the same run
+  expected_outcome:
+  - Booking persists server-side
+  steps:
+  - action: open_section
+    pattern: booking|appointment|my care|orders
+    expected: 'Bookings list opens  # VERIFY menu name'
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload the page
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Booking still listed after reload
+  - action: screenshot
+    name: e2e_02_after_reload
+    expected: Evidence screenshot (masked)

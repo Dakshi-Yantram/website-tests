@@ -1,0 +1,28 @@
+version: 1
+workflows:
+- id: sec_05_nurse_cannot_open_customer_area
+  app: nurseconnect
+  title: 'Security: a nurse cannot open /consumer (broken access control)'
+  description: Logs in as nurse then opens /consumer directly by URL. The URL must
+    leave /consumer or an access-denied message must show.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Access denied or redirected
+  steps:
+  - action: goto
+    path: /consumer
+    expected: Open /consumer as nurse
+    optional: true
+  - action: expect_url
+    matches: ^(?!.*/consumer(/|$)).*$
+    expected: 'Not left on /consumer  # FAIL means the area is reachable'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

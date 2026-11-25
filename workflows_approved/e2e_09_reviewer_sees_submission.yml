@@ -1,0 +1,30 @@
+version: 1
+workflows:
+- id: e2e_09_reviewer_sees_submission
+  app: nurseconnect
+  title: 'Reviewer: the submitted documentation appears in the review queue'
+  description: Nurse -> Reviewer hand-off, reviewer side. Read-only.
+  status: approved
+  risk: low
+  writes: false
+  role: reviewer
+  tags:
+  - chain
+  preconditions:
+  - e2e_08 ran
+  - REVIEWER_EMAIL / REVIEWER_PASSWORD set
+  expected_outcome:
+  - Reviewer sees the correct submission
+  steps:
+  - action: open_section
+    pattern: review|queue|pending|documentation
+    expected: 'Review queue opens  # VERIFY menu name'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Submission visible to the reviewer
+  - action: expect_text
+    contains: '{{MARKER}}'
+    expected: Note content visible to the reviewer
+  - action: screenshot
+    name: e2e_09_review_queue
+    expected: Evidence screenshot (masked)

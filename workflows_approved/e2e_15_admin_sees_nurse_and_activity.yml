@@ -1,0 +1,34 @@
+version: 1
+workflows:
+- id: e2e_15_admin_sees_nurse_and_activity
+  app: nurseconnect
+  title: 'Admin: nurse record and the booking activity are visible to the admin'
+  description: 'Nurse <-> Admin. Read-only. Admin write actions (approve / suspend
+    a nurse) are not included: see docs/NURSECONNECT_E2E_TEST_PLAN.md.'
+  status: approved
+  risk: low
+  writes: false
+  role: admin
+  tags:
+  - chain
+  preconditions:
+  - e2e_13 ran
+  - ADMIN_EMAIL / ADMIN_PASSWORD set
+  expected_outcome:
+  - Admin has visibility across the chain
+  steps:
+  - action: open_section
+    pattern: nurse|partner|staff|users
+    expected: 'Nurse management page opens  # VERIFY menu name'
+  - action: expect_text
+    contains: Test Nurse
+    expected: 'Dedicated test nurse is listed  # VERIFY'
+  - action: open_section
+    pattern: booking|request|order|report
+    expected: 'Bookings / reports page opens  # VERIFY'
+  - action: expect_text
+    contains: '{{SYNTH_NAME}}'
+    expected: Booking visible to the admin
+  - action: screenshot
+    name: e2e_15_admin_view
+    expected: Evidence screenshot (masked)

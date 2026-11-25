@@ -1,0 +1,35 @@
+version: 1
+workflows:
+- id: edge_09_nurse_session_survives_reload
+  app: nurseconnect
+  title: 'Edge: the nurse session survives reloads and a new navigation'
+  description: Read-only.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Session persists
+  steps:
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_authenticated
+    expected: Still logged in after reload
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments opens
+  - action: press
+    target:
+      css: body
+    key: F5
+    expected: Reload
+  - action: expect_authenticated
+    expected: Still logged in after second reload

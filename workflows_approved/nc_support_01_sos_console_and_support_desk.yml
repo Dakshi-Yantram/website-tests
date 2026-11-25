@@ -1,0 +1,82 @@
+version: 1
+workflows:
+- id: nc_support_01_sos_console_and_support_desk
+  app: nurseconnect
+  title: 'Support: nurse SOS incidents, support chats, ticket queue, escalations,
+    SOS partners open'
+  description: 'Logged in as support. These routes belong to the support portal only
+    (admin sees Unauthorized). View only: no incident is acknowledged, assigned, escalated
+    or resolved.'
+  status: approved
+  risk: medium
+  writes: false
+  role: support
+  tags:
+  - e2e
+  - support
+  - sos
+  preconditions:
+  - SUPPORT_EMAIL / SUPPORT_PASSWORD set; role 'support' added to config.AGENT_ROLES
+  expected_outcome:
+  - SOS console and support desk open
+  - No incident state changes
+  sources:
+  - file: frontend/src/routes/_app.sos-incidents.tsx
+  - file: frontend/src/routes/_app.support-desk.tsx
+  - file: frontend/src/routes/_app.support-tickets.tsx
+  - file: frontend/src/routes/_app.support-escalations.tsx
+  - file: frontend/src/routes/_app.emergency-partners.tsx
+  timeout_ms: 60000
+  steps:
+  - action: goto
+    path: /sos-incidents
+    expected: /sos-incidents responds
+  - action: expect_url
+    contains: /sos-incidents
+    expected: URL still contains /sos-incidents (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Nurse SOS Incidents
+    expected: '''Nurse SOS Incidents'' is shown'
+  - action: goto
+    path: /support-desk
+    expected: /support-desk responds
+  - action: expect_url
+    contains: /support-desk
+    expected: URL still contains /support-desk (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Support Chats
+    expected: '''Support Chats'' is shown'
+  - action: goto
+    path: /support-tickets
+    expected: /support-tickets responds
+  - action: expect_url
+    contains: /support-tickets
+    expected: URL still contains /support-tickets (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Support Ticket Queue
+    expected: '''Support Ticket Queue'' is shown'
+  - action: goto
+    path: /support-escalations
+    expected: /support-escalations responds
+  - action: expect_url
+    contains: /support-escalations
+    expected: URL still contains /support-escalations (no redirect to login)
+  - action: expect_visible
+    target:
+      text: All Escalations
+    expected: '''All Escalations'' is shown'
+  - action: goto
+    path: /emergency-partners
+    expected: /emergency-partners responds
+  - action: expect_url
+    contains: /emergency-partners
+    expected: URL still contains /emergency-partners (no redirect to login)
+  - action: expect_visible
+    target:
+      text: SOS Partners & MOU
+    expected: '''SOS Partners & MOU'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written

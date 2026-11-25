@@ -190,6 +190,14 @@ jobs:
       RECEPTION_PASSWORD: ${{ secrets.RECEPTION_PASSWORD }}
       DOCTOR_EMAIL: ${{ secrets.DOCTOR_EMAIL }}
       DOCTOR_PASSWORD: ${{ secrets.DOCTOR_PASSWORD }}
+      OPS_EMAIL: ${{ secrets.OPS_EMAIL }}
+      OPS_PASSWORD: ${{ secrets.OPS_PASSWORD }}
+      REVIEWER_EMAIL: ${{ secrets.REVIEWER_EMAIL }}
+      REVIEWER_PASSWORD: ${{ secrets.REVIEWER_PASSWORD }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
+      SUPPORT_PASSWORD: ${{ secrets.SUPPORT_PASSWORD }}
       APP_ONLY: ${{ matrix.app }}
       FAIL_ON_INCOMPLETE: ${{ vars.AGENT_FAIL_ON_INCOMPLETE }}   # the ONLY switch for --fail-on-incomplete: 'true' = any NOT VERIFIED/NOT TESTED fails the job (default: only critical ones)
       WORKFLOW_SPEC: ${{ matrix.app == 'nurseconnect' && vars.NURSECONNECT_WORKFLOW_SPEC || vars.HOSPITAL_WORKFLOW_SPEC }}
@@ -435,6 +443,8 @@ jobs:
       REVIEWER_PASSWORD: ${{ secrets.STAGING_REVIEWER_PASSWORD }}
       ADMIN_EMAIL: ${{ secrets.STAGING_ADMIN_EMAIL }}
       ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+      SUPPORT_EMAIL: ${{ secrets.STAGING_SUPPORT_EMAIL }}
+      SUPPORT_PASSWORD: ${{ secrets.STAGING_SUPPORT_PASSWORD }}
       LOCKOUT_EMAIL: ${{ secrets.STAGING_LOCKOUT_EMAIL }}          # dedicated throw-away account used by the lockout test
       LOCKOUT_PASSWORD: ${{ secrets.STAGING_LOCKOUT_PASSWORD }}
     steps:

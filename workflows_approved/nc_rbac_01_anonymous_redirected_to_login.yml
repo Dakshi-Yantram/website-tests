@@ -1,0 +1,93 @@
+version: 1
+workflows:
+- id: nc_rbac_01_anonymous_redirected_to_login
+  app: nurseconnect
+  title: 'RBAC: anonymous visitor is sent to /auth/login for protected consumer, partner,
+    ops, finance and support routes'
+  description: No login. Each protected route must show the login form (and a /auth/login
+    URL), never data.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - security
+  - rbac
+  - smoke
+  preconditions:
+  - No login
+  expected_outcome:
+  - Login form on every protected route
+  - No write request is sent
+  sources:
+  - file: frontend/src/routes/_app.tsx
+  - file: frontend/src/routes/auth.login.tsx
+  timeout_ms: 45000
+  steps:
+  - action: goto
+    path: /consumer/bookings
+    expected: Open /consumer/bookings anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: goto
+    path: /partner/visits
+    expected: Open /partner/visits anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: goto
+    path: /ops-dashboard
+    expected: Open /ops-dashboard anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: goto
+    path: /payout-approvals
+    expected: Open /payout-approvals anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: goto
+    path: /sos-incidents
+    expected: Open /sos-incidents anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: goto
+    path: /support-desk
+    expected: Open /support-desk anonymously
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Login form is shown instead of the page
+    timeout_ms: 20000
+  - action: expect_url
+    contains: /auth/login
+    expected: Redirected to the login route
+  - action: expect_no_writes_sent
+    expected: Nothing was written
