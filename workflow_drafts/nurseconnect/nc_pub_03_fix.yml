@@ -1,0 +1,41 @@
+version: 1
+workflows:
+- id: nc_pub_03_invalid_verification_link
+  app: nurseconnect
+  title: 'Public: an invalid /verify/<token> link fails safely'
+  description: Anonymous. The medicine-verification page is token-only (no login).
+    A made-up token must not crash the page or expose a booking. Read-only (GET /api/verify/<token>
+    only; no upload is attempted).
+  status: draft
+  risk: low
+  writes: false
+  tags:
+  - public
+  - verification
+  - security
+  preconditions:
+  - No login
+  expected_outcome:
+  - Page shows a load error and a Try again button for an unknown token
+  sources:
+  - file: frontend/src/routes/verify.$token.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /verify/qa-invalid-token-0000
+    expected: /verify/qa-invalid-token-0000 responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: NurseConnect
+    expected: Heading 'NurseConnect' is shown
+  - action: expect_visible
+    target:
+      role: button
+      name: Try again
+      exact: true
+    expected: An unknown token shows a load error with a retry button (not a blank
+      page, no booking data)
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: Nothing was written

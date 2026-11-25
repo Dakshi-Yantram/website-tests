@@ -1,0 +1,113 @@
+version: 1
+workflows:
+- id: nc_cons_01_portal_pages
+  app: nurseconnect
+  title: 'Consumer: home, patients and saved addresses open'
+  description: Logged in as consumer. Read-only page loads.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  expected_outcome:
+  - Each page opens without a login redirect
+  sources:
+  - file: frontend/src/routes/_app.consumer.index.tsx
+  - file: frontend/src/routes/_app.consumer.patients.tsx
+  - file: frontend/src/routes/_app.consumer.addresses.tsx
+  timeout_ms: 40000
+  steps:
+  - action: goto
+    path: /consumer
+    expected: /consumer responds
+  - action: expect_url
+    contains: /consumer
+    expected: URL still contains /consumer (no redirect to login)
+  - action: expect_visible
+    target:
+      text: care stands today
+    expected: '''care stands today'' is shown'
+  - action: goto
+    path: /consumer/patients
+    expected: /consumer/patients responds
+  - action: expect_url
+    contains: /consumer/patients
+    expected: URL still contains /consumer/patients (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Your patients
+    expected: '''Your patients'' is shown'
+  - action: goto
+    path: /consumer/addresses
+    expected: /consumer/addresses responds
+  - action: expect_url
+    contains: /consumer/addresses
+    expected: URL still contains /consumer/addresses (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Saved addresses
+    expected: '''Saved addresses'' is shown'
+  - action: expect_no_writes_sent
+    expected: Nothing was written
+- id: nc_cons_02_payments_notifications_profile
+  app: nurseconnect
+  title: 'Consumer: payment history, notifications and profile/security open'
+  description: Logged in as consumer. Payment history is read-only; the agent never
+    clicks pay, checkout or refund.
+  status: draft
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - payments
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  expected_outcome:
+  - Pages open
+  - No payment action is triggered
+  sources:
+  - file: frontend/src/routes/_app.consumer.payments.tsx
+  - file: frontend/src/routes/_app.consumer.notifications.tsx
+  - file: frontend/src/routes/_app.consumer.profile_.tsx
+  timeout_ms: 40000
+  steps:
+  - action: goto
+    path: /consumer/payments
+    expected: /consumer/payments responds
+  - action: expect_url
+    contains: /consumer/payments
+    expected: URL still contains /consumer/payments (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Recent charges
+    expected: '''Recent charges'' is shown'
+  - action: goto
+    path: /consumer/notifications
+    expected: /consumer/notifications responds
+  - action: expect_url
+    contains: /consumer/notifications
+    expected: URL still contains /consumer/notifications (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Notifications
+    expected: Heading 'Notifications' is shown
+  - action: goto
+    path: /consumer/profile
+    expected: /consumer/profile responds
+  - action: expect_url
+    contains: /consumer/profile
+    expected: URL still contains /consumer/profile (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Two-Factor Authentication
+    expected: Heading 'Two-Factor Authentication' is shown
+  - action: expect_no_writes_sent
+    expected: Nothing was written

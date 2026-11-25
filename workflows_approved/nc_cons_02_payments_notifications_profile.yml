@@ -53,7 +53,15 @@ workflows:
     expected: URL still contains /consumer/profile (no redirect to login)
   - action: expect_visible
     target:
-      text: Enable 2FA
-    expected: '''Enable 2FA'' is shown'
+      role: button
+      name: Personal Information
+      exact: true
+    expected: Profile menu offers Personal Information
+  - action: expect_visible
+    target:
+      role: button
+      name: Account Settings
+      exact: true
+    expected: Profile menu offers Account Settings
   - action: expect_no_writes_sent
     expected: Nothing was written

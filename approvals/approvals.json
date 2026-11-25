@@ -209,19 +209,19 @@
     },
     "nc_cons_01_portal_pages": {
       "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:36+00:00",
+      "approved_at": "2026-11-25T07:10:51+00:00",
       "approved_by": "Dakshi",
-      "hash": "bfc51fd08f52e9bbfc557d56fca9b7b54e2ec65b465b6b27954356157cdafd64",
-      "reason": "NurseConnect read-only full suite",
+      "hash": "044e0d534d723cf5acfb79ffa6a2f0bec05a0ddf18e2aa9633ac6d73df16e415",
+      "reason": "Fix data-dependent assertions on patients and profile pages",
       "risk": "low",
       "writes": false
     },
     "nc_cons_02_payments_notifications_profile": {
       "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
+      "approved_at": "2026-11-25T07:13:03+00:00",
       "approved_by": "Dakshi",
-      "hash": "ffba042386fdbd556c4785b0afa4777f4c513cb27e52a7ca78c2228ef25dfa2d",
-      "reason": "NurseConnect read-only full suite",
+      "hash": "1f688cf613cf88739b4a0446a845a1f4ecfcff57eaaa8a702fb7b951898b2030",
+      "reason": "Fix profile page assertion to the default view",
       "risk": "low",
       "writes": false
     },
@@ -236,19 +236,19 @@
     },
     "nc_cons_04_new_booking_modal_opens_writes_blocked": {
       "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
+      "approved_at": "2026-11-25T07:21:31+00:00",
       "approved_by": "Dakshi",
-      "hash": "ac98c24bda39dff651c034782227fcee0d42e0656c48a5b3dbfa0342ba5bb4db",
-      "reason": "NurseConnect read-only full suite",
+      "hash": "cf016cf1d9191986991218b129cc51b099087cd3fcacdefd85e4d9f383325cf0",
+      "reason": "Dismiss auto-opened dialogs before clicking",
       "risk": "medium",
       "writes": false
     },
     "nc_cons_05_book_from_package_prefills_modal": {
       "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
+      "approved_at": "2026-11-25T07:21:31+00:00",
       "approved_by": "Dakshi",
-      "hash": "88c57631055fe8a298f0a8810bf1d6f0c8d5e50e4903735a9d8aff387ed4f294",
-      "reason": "NurseConnect read-only full suite",
+      "hash": "a529b49b89f22e5dc61cab4acdb08614246e7a7e0a122fc3ffa91f471705c853",
+      "reason": "Dismiss auto-opened dialogs before clicking",
       "risk": "medium",
       "writes": false
     },
@@ -326,10 +326,10 @@
     },
     "nc_pub_03_invalid_verification_link": {
       "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:36+00:00",
+      "approved_at": "2026-11-25T06:58:41+00:00",
       "approved_by": "Dakshi",
-      "hash": "c687e8fdea0c1bd98fe140456aa6c488e1bcbd9043701d3fa8bcaa46bb453761",
-      "reason": "NurseConnect read-only full suite",
+      "hash": "02f505224cceb55cf2da06f567a2c0bf5f012d32476806152db74bcc998b15d7",
+      "reason": "Corrected: unknown token shows Try again button",
       "risk": "low",
       "writes": false
     },
