@@ -243,7 +243,7 @@ jobs:
         run: |
           # Always applied (with or without WORKFLOW_SPEC): a credential/config block or a CRITICAL NOT VERIFIED
           # workflow must never produce a green job. Only intentionally unapproved drafts are tolerated (still reported).
-          args=(--app "$APP_ONLY" --read-only --fail-on-blocked --ignore-blocked unapproved,credentials --fail-on-critical-unverified)
+          args=(--app "$APP_ONLY" --read-only --fail-on-blocked --ignore-blocked unapproved --fail-on-critical-unverified)
           # Placeholder workflows (compiled from a spec with no selectors) verify nothing. They are listed loudly as a COVERAGE GAP instead of
           # turning every run red forever; the real coverage comes from the agent-auto job. Set repo variable AGENT_PLACEHOLDERS_FAIL=true to make them fail.
           if [[ "$PLACEHOLDERS_FAIL" != "true" ]]; then args+=(--placeholders-as-gaps); fi
