@@ -63,51 +63,6 @@
       "risk": "low",
       "writes": false
     },
-    "nc_admin_01_overview_and_users": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "53a55c35b3a149e439de107c52af7bb873012f97bd6578152a40146978e3c31e",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_admin_02_nurse_and_onboarding_approval_queues": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "07b28dbcf6799e960981a7e4ff7954333e1bd79cf9c5aff2726a75a9267126c9",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "medium",
-      "writes": false
-    },
-    "nc_admin_03_finance_payouts": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "f70f6864d1979c35fc588f45d87407ddd12239ab03dc26bb8743e042b3862f8d",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "medium",
-      "writes": false
-    },
-    "nc_admin_04_trust_clinical_compliance": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "4697a63f627a5c45bd8c15a57a079140ea2136c80e8027a03770105464449c9d",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_admin_05_catalogue_admin": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "16c49cded0ad8694bb4a44c9d8dfdd70d2e610a872875b6e6e058b92733323f8",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
     "nc_cons_01_portal_pages": {
       "app": "nurseconnect",
       "approved_at": "2026-11-25T07:10:51+00:00",
@@ -158,15 +113,6 @@
       "approved_at": "2026-11-25T06:50:37+00:00",
       "approved_by": "Dakshi",
       "hash": "adc75421e7956307707f99c3361849a010f89313140ee8c3771e542797049525",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_ops_01_staff_accounts_and_faq": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "26d0f8c5c18d664b7e29863469fcc381672d9dc32e4c3a0099f7d18f085891bc",
       "reason": "NurseConnect read-only full suite",
       "risk": "low",
       "writes": false
@@ -261,51 +207,6 @@
       "risk": "low",
       "writes": false
     },
-    "nc_rbac_04_admin_blocked_from_support_and_other_portals": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:36+00:00",
-      "approved_by": "Dakshi",
-      "hash": "ccd6dd0ab4163be00aa5a0e69a69a7feb01c27dd5919b20f0e4cd685e12f421c",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_rbac_05_reviewer_scope": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:36+00:00",
-      "approved_by": "Dakshi",
-      "hash": "e1cfa3314ade3beb307749158d55167289b5dcf18dfd594af0dafb6af8c1f2c2",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_rbac_06_operations_scope": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:36+00:00",
-      "approved_by": "Dakshi",
-      "hash": "89c250a27dee09650f8a2161b590bf5090d8aeae1f045e2d740db4c2b946994a",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_rev_01_review_queues": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "b85fcea0266885802af5c3583f924aad2ec42fc8a18364efacbb4b2ecb9155a1",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "low",
-      "writes": false
-    },
-    "nc_support_01_sos_console_and_support_desk": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:37+00:00",
-      "approved_by": "Dakshi",
-      "hash": "3edda5232b37ce3eaed3fd6b2f889f6ed45dcc4923c36d18151807b7824c67a3",
-      "reason": "NurseConnect read-only full suite",
-      "risk": "medium",
-      "writes": false
-    },
     "nurse_login_form": {
       "app": "nurseconnect",
       "approved_at": "2026-10-21T15:53:52+00:00",
@@ -366,33 +267,6 @@
       "approved_by": "Dakshi",
       "hash": "2db9986c38fcf772806d06ad0cb0b351a5e69212c6d46d3570be4b230757efe9",
       "reason": "Read-only anonymous access check on staging",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_08_reviewer_cannot_open_admin_area": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "ec81fea9fa34ff88cda97ada2428e45a7c5684ce10bc860c3cadf019ea3291d1",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_09_operations_cannot_open_admin_area": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "3785372db82e3df7d62136a21df4e1a93e72598359ad4198753422222284f717",
-      "reason": "Read-only edge and security checks",
-      "risk": "low",
-      "writes": false
-    },
-    "sec_10_login_sql_injection_strings": {
-      "app": "nurseconnect",
-      "approved_at": "2026-11-25T06:50:38+00:00",
-      "approved_by": "Dakshi",
-      "hash": "569aff7ccf7b8ebedb42e317e1fe64915bae233b4f11570f164e8699d6ec6a3d",
-      "reason": "Read-only edge and security checks",
       "risk": "low",
       "writes": false
     },
