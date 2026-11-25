@@ -1,0 +1,67 @@
+version: 1
+workflows:
+- id: nc_rbac_05_reviewer_scope
+  app: nurseconnect
+  title: 'RBAC: reviewer sees review queues but not finance, audit or patient lists'
+  description: 'Logged in as reviewer. Allowed: nurse approval, onboarding review.
+    Blocked: payout approvals, audit logs, patient list (reviewer has no users.view
+    / finance / compliance permission).'
+  status: approved
+  risk: low
+  writes: false
+  role: reviewer
+  tags:
+  - security
+  - rbac
+  preconditions:
+  - REVIEWER_EMAIL / REVIEWER_PASSWORD set for a test account
+  expected_outcome:
+  - Review pages open
+  - Finance, audit and patient pages are blocked
+  sources:
+  - file: frontend/src/routes/../lib/rbac.ts
+  - file: frontend/src/routes/_app.nurse-approval.tsx
+  - file: frontend/src/routes/_app.onboarding-review.tsx
+  timeout_ms: 45000
+  steps:
+  - action: goto
+    path: /nurse-approval
+    expected: /nurse-approval responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: My Review Queue
+    expected: Heading 'My Review Queue' is shown
+  - action: goto
+    path: /onboarding-review
+    expected: /onboarding-review responds
+  - action: expect_visible
+    target:
+      text: Applications in Pipeline
+    expected: '''Applications in Pipeline'' is shown'
+  - action: goto
+    path: /payout-approvals
+    expected: Open /payout-approvals with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /audit-logs
+    expected: Open /audit-logs with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: goto
+    path: /users/patients
+    expected: Open /users/patients with the wrong role
+  - action: expect_visible
+    target:
+      text: You don't have access to this module
+    expected: Unauthorized boundary is shown (role/portal isolation)
+    timeout_ms: 20000
+  - action: expect_no_writes_sent
+    expected: Nothing was written

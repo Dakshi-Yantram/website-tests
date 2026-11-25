@@ -1,0 +1,55 @@
+version: 1
+workflows:
+- id: nc_part_04_open_first_visit_if_any
+  app: nurseconnect
+  title: 'Partner: first visit in the list opens (data-dependent; NOT VERIFIED when
+    the test nurse has no visits)'
+  description: 'Logged in as nurse. Visit extensions and the end-visit OTP render
+    on /partner/visits/<id> only for a live visit and only when FEATURE_VISIT_EXTENSIONS
+    is on, so they are not asserted here. Every data-dependent step is optional: with
+    no visits the result is NOT VERIFIED, never a false PASS.'
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - e2e
+  - partner
+  - data-dependent
+  preconditions:
+  - NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse
+  - Nurse has at least one visit for a full PASS
+  expected_outcome:
+  - Visit detail opens when a visit exists
+  sources:
+  - file: frontend/src/routes/_app.partner.visits.index.tsx
+  - file: frontend/src/routes/_app.partner.visits.$visitId.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /partner/visits
+    expected: /partner/visits responds
+  - action: expect_visible
+    target:
+      text: My Visits
+    expected: '''My Visits'' is shown'
+  - action: click
+    target:
+      css: a[href*='/partner/visits/']
+    expected: Open the first visit if one exists
+    timeout_ms: 8000
+    optional: true
+  - action: expect_url
+    matches: /partner/visits/[^/?#]+
+    expected: Visit detail URL
+    timeout_ms: 10000
+    optional: true
+  - action: expect_visible
+    target:
+      css: main
+    expected: Visit detail renders inside the app shell
+    optional: true
+  - action: expect_authenticated
+    expected: Session is still signed in
+  - action: expect_no_writes_sent
+    expected: Nothing was written

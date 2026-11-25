@@ -1,0 +1,34 @@
+version: 1
+workflows:
+- id: nc_cons_06_unknown_booking_id_is_handled
+  app: nurseconnect
+  title: 'Consumer: opening an unknown booking id shows ''Booking not found'''
+  description: Logged in as consumer. A made-up booking id must produce the in-app
+    not-found card, not a blank page or someone else's booking.
+  status: approved
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - e2e
+  - consumer
+  - security
+  preconditions:
+  - CONSUMER_EMAIL / CONSUMER_PASSWORD set for a test account
+  expected_outcome:
+  - Not-found card is shown
+  sources:
+  - file: frontend/src/routes/_app.consumer.bookings.$bookingId.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /consumer/bookings/qa-no-such-booking-id
+    expected: /consumer/bookings/qa-no-such-booking-id responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: Booking not found
+    expected: Heading 'Booking not found' is shown
+    timeout_ms: 25000
+  - action: expect_no_writes_sent
+    expected: Nothing was written

@@ -1,0 +1,45 @@
+version: 1
+workflows:
+- id: edge_03_booking_very_long_text
+  app: nurseconnect
+  title: 'Edge: very long text in the notes field is limited or rejected, not crashed
+    on'
+  description: About 1,400 characters made from the run marker. Blocked from writing.
+  status: approved
+  risk: low
+  writes: false
+  role: consumer
+  tags:
+  - edge
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Long input handled cleanly
+  steps:
+  - action: open_section
+    pattern: care package|package|service
+    expected: Care packages page opens
+  - action: click
+    target:
+      role: link
+      name: Book
+    expected: 'Open booking form  # VERIFY'
+  - action: fill
+    target:
+      label: Notes
+    value: '{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}{{MARKER}}'
+    expected: 'Long notes  # VERIFY label'
+  - action: guarded_submit
+    target:
+      role: button
+      name: Request Booking
+    expected: Submit
+  - action: expect_hidden
+    target:
+      text: Internal Server Error
+    expected: No server error page
+  - action: expect_hidden
+    target:
+      text: Something went wrong
+    expected: 'No generic crash message  # VERIFY wording'

@@ -1,0 +1,57 @@
+version: 1
+workflows:
+- id: nc_pub_01_home_and_info_pages
+  app: nurseconnect
+  title: 'Public: home, about, contact and privacy pages render'
+  description: Anonymous. Opens each public marketing page and checks a heading that
+    only that page has. Read-only.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - public
+  - smoke
+  preconditions:
+  - Public pages reachable
+  expected_outcome:
+  - Every public page shows its own heading
+  - No write request is sent
+  sources:
+  - file: frontend/src/routes/index.tsx
+  - file: frontend/src/routes/about.tsx
+  - file: frontend/src/routes/contact.tsx
+  - file: frontend/src/routes/privacy-policy.tsx
+  timeout_ms: 30000
+  steps:
+  - action: goto
+    path: /
+    expected: / responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: Our Care Packages
+    expected: Home page shows the care-package section
+  - action: goto
+    path: /about
+    expected: /about responds
+  - action: expect_visible
+    target:
+      text: Why Families Choose NurseConnect
+    expected: '''Why Families Choose NurseConnect'' is shown'
+  - action: goto
+    path: /contact
+    expected: /contact responds
+  - action: expect_visible
+    target:
+      text: Send us a message
+    expected: '''Send us a message'' is shown'
+  - action: goto
+    path: /privacy-policy
+    expected: /privacy-policy responds
+  - action: expect_visible
+    target:
+      role: heading
+      name: Privacy Policy
+    expected: Heading 'Privacy Policy' is shown
+  - action: expect_no_writes_sent
+    expected: Nothing was written

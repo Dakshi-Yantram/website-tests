@@ -1,0 +1,37 @@
+version: 1
+workflows:
+- id: e2e_16_nurse_access_matches_admin_status
+  app: nurseconnect
+  title: 'Nurse: an active, approved nurse can open the workspace (admin-controlled
+    status takes effect)'
+  description: Nurse <-> Admin. Read-only. Confirms the nurse account the admin manages
+    can reach Workspace, Assignments, Visits and Documentation.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - chain
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - All four nurse pages open
+  steps:
+  - action: expect_authenticated
+    expected: Nurse is logged in
+  - action: open_section
+    pattern: Workspace
+    expected: Workspace opens
+  - action: open_section
+    pattern: Assignments
+    expected: Assignments opens
+  - action: open_section
+    pattern: Visits
+    expected: Visits opens
+  - action: open_section
+    pattern: Documentation
+    expected: Documentation opens
+  - action: expect_url
+    contains: /partner
+    expected: Nurse stays in the partner area

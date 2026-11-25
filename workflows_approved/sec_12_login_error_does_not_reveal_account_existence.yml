@@ -1,0 +1,59 @@
+version: 1
+workflows:
+- id: sec_12_login_error_does_not_reveal_account_existence
+  app: nurseconnect
+  title: 'Security: the login error for an unknown account is generic'
+  description: A message such as 'user not found' lets an attacker list valid accounts.
+  status: approved
+  risk: low
+  writes: false
+  tags:
+  - security
+  preconditions:
+  - Declared staging environment
+  - Synthetic data only
+  expected_outcome:
+  - Generic error text
+  steps:
+  - action: goto
+    path: /auth/login
+    expected: 'Open login  # VERIFY path'
+  - action: fill
+    target:
+      css: input[type="email"], input[name*="email" i], input[id*="email" i], input[placeholder*="email"
+        i], input[name*="user" i], input[type="text"]
+    value: '{{SYNTH_EMAIL}}'
+    expected: Unknown synthetic account
+  - action: fill
+    target:
+      css: input[type="password"]
+    value: '{{RUN_ID}}'
+    expected: Wrong password
+  - action: login_submit
+    target:
+      role: button
+      name: Login
+    expected: Submit
+  - action: wait_for
+    ms: 1500
+    expected: Pause
+  - action: expect_hidden
+    target:
+      text: not registered
+    expected: No 'not registered'
+  - action: expect_hidden
+    target:
+      text: no account
+    expected: No 'no account'
+  - action: expect_hidden
+    target:
+      text: user not found
+    expected: No 'user not found'
+  - action: expect_hidden
+    target:
+      text: does not exist
+    expected: No 'does not exist'
+  - action: expect_visible
+    target:
+      css: input[type="password"]
+    expected: Still on the login form

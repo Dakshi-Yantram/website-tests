@@ -1,0 +1,110 @@
+version: 1
+workflows:
+- id: nc_part_02_earnings_training_help_profile
+  app: nurseconnect
+  title: 'Partner: earnings, training, assessments, teleconsult, help, notifications
+    and profile'
+  description: Logged in as nurse. Teleconsult shows either the queue or the 'Tele-Doctor
+    feature' notice depending on provider type, so only URL, session and shell are
+    asserted there.
+  status: approved
+  risk: low
+  writes: false
+  role: nurse
+  tags:
+  - e2e
+  - partner
+  - nurse
+  preconditions:
+  - NURSE_EMAIL / NURSE_PASSWORD set for an APPROVED test nurse
+  expected_outcome:
+  - Every page opens without a login redirect
+  sources:
+  - file: frontend/src/routes/_app.partner.earnings.tsx
+  - file: frontend/src/routes/_app.partner.training.tsx
+  - file: frontend/src/routes/_app.partner.assessments.tsx
+  - file: frontend/src/routes/_app.partner.teleconsult.tsx
+  - file: frontend/src/routes/_app.partner.help.tsx
+  - file: frontend/src/routes/_app.partner.notifications.tsx
+  - file: frontend/src/routes/_app.partner.profile.tsx
+  timeout_ms: 60000
+  steps:
+  - action: goto
+    path: /partner/earnings
+    expected: /partner/earnings responds
+  - action: expect_url
+    contains: /partner/earnings
+    expected: URL still contains /partner/earnings (no redirect to login)
+  - action: expect_visible
+    target:
+      text: Payout History
+    expected: '''Payout History'' is shown'
+  - action: goto
+    path: /partner/training
+    expected: /partner/training responds
+  - action: expect_url
+    contains: /partner/training
+    expected: URL still contains /partner/training (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Training & Certifications
+    expected: Heading 'Training & Certifications' is shown
+  - action: goto
+    path: /partner/assessments
+    expected: /partner/assessments responds
+  - action: expect_url
+    contains: /partner/assessments
+    expected: URL still contains /partner/assessments (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Assessments
+    expected: Heading 'Assessments' is shown
+  - action: goto
+    path: /partner/teleconsult
+    expected: /partner/teleconsult responds
+  - action: expect_url
+    contains: /partner/teleconsult
+    expected: URL still contains /partner/teleconsult (no redirect to login)
+  - action: expect_visible
+    target:
+      css: main
+    expected: Page shell renders
+  - action: goto
+    path: /partner/help
+    expected: /partner/help responds
+  - action: expect_url
+    contains: /partner/help
+    expected: URL still contains /partner/help (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Help & Support
+    expected: Heading 'Help & Support' is shown
+  - action: goto
+    path: /partner/notifications
+    expected: /partner/notifications responds
+  - action: expect_url
+    contains: /partner/notifications
+    expected: URL still contains /partner/notifications (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: Notifications
+    expected: Heading 'Notifications' is shown
+  - action: goto
+    path: /partner/profile
+    expected: /partner/profile responds
+  - action: expect_url
+    contains: /partner/profile
+    expected: URL still contains /partner/profile (no redirect to login)
+  - action: expect_visible
+    target:
+      role: heading
+      name: My Profile
+    expected: Heading 'My Profile' is shown
+  - action: expect_authenticated
+    expected: Session is still signed in
+  - action: expect_no_writes_sent
+    expected: Nothing was written
